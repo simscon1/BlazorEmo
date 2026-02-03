@@ -1,0 +1,167 @@
+﻿@page "/"
+@using BlazorEmoji.Components
+@using BlazorEmoji.Models
+
+<PageTitle>Blazor Emoji Picker Demo</PageTitle>
+
+<div class="demo-container">
+    <h1>🎉 Blazor Emoji Picker Demo</h1>
+    <p>Click the button below to open the emoji picker and select your favorite emoji!</p>
+
+    <div class="demo-card">
+        <h2>Try it out:</h2>
+
+        <button class="emoji-button" @onclick="ToggleEmojiPicker">
+            @if (selectedEmoji != null)
+            {
+                <span class="emoji-display">@selectedEmoji.Char</span>
+                <span>@selectedEmoji.Name</span>
+            }
+            else
+            {
+                <span>😀 Pick an Emoji</span>
+            }
+        </button>
+
+        @if (selectedEmoji != null)
+        {
+            <div class="emoji-info">
+                <h3>Selected Emoji Details:</h3>
+                <ul>
+                    <li><strong>Character:</strong> @selectedEmoji.Char</li>
+                    <li><strong>Name:</strong> @selectedEmoji.Name</li>
+                    <li><strong>Code:</strong> @selectedEmoji.Code</li>
+                    <li><strong>Keywords:</strong> @string.Join(", ", selectedEmoji.Keywords)</li>
+                </ul>
+            </div>
+        }
+    </div>
+
+    <div class="demo-card">
+        <h2>Features:</h2>
+        <ul class="features-list">
+            <li>✨ Search emojis by name or keywords</li>
+            <li>📁 Browse by category</li>
+            <li>🕒 View recently used emojis</li>
+            <li>⌨️ Full keyboard navigation support</li>
+            <li>♿ Screen reader accessible</li>
+        </ul>
+    </div>
+</div>
+
+<EmojiPicker 
+    IsOpen="@isPickerOpen" 
+    OnEmojiSelected="@HandleEmojiSelected" 
+    OnClose="@CloseEmojiPicker" />
+
+@code {
+    private bool isPickerOpen = false;
+    private Emoji? selectedEmoji = null;
+
+    private void ToggleEmojiPicker()
+    {
+        isPickerOpen = !isPickerOpen;
+    }
+
+    private void CloseEmojiPicker()
+    {
+        isPickerOpen = false;
+    }
+
+    private void HandleEmojiSelected(Emoji emoji)
+    {
+        selectedEmoji = emoji;
+        isPickerOpen = false;
+    }
+}
+
+<style>
+    .demo-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 1rem;
+    }
+
+    .demo-card {
+        background: white;
+        border-radius: 8px;
+        padding: 2rem;
+        margin: 2rem 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .emoji-button {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem 2rem;
+        font-size: 1.25rem;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .emoji-button:hover {
+        background: #0056b3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    }
+
+    .emoji-button:active {
+        transform: translateY(0);
+    }
+
+    .emoji-display {
+        font-size: 2rem;
+    }
+
+    .emoji-info {
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #007bff;
+    }
+
+    .emoji-info h3 {
+        margin-top: 0;
+        color: #007bff;
+    }
+
+    .emoji-info ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .emoji-info li {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .emoji-info li:last-child {
+        border-bottom: none;
+    }
+
+    .features-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .features-list li {
+        padding: 0.75rem 0;
+        font-size: 1.1rem;
+    }
+
+    h1 {
+        color: #333;
+        margin-bottom: 1rem;
+    }
+
+    h2 {
+        color: #555;
+        margin-top: 0;
+    }
+</style>
