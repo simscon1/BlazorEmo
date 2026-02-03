@@ -2,84 +2,149 @@
 @using BlazorEmoji.Services
 @inject IEmojiService EmojiService
 
-<div class="emoji-picker @(IsOpen ? "emoji-picker-open" : "")"
-     @onclick:stopPropagation>
-    
-    <!-- Search Box -->
-    <div class="emoji-picker-search">
-        <input type="text" 
-               placeholder="Search emojis..." 
-               @bind="searchQuery" 
-               @bind:event="oninput"
-               @onkeydown="HandleKeyDown"
-               class="emoji-search-input" />
-    </div>
-    
-    <!-- Tab Bar -->
-    <div class="emoji-tabs">
-        <button type="button" 
-                class="emoji-tab @(activeTab == "recent" ? "active" : "")"
-                @onclick='() => SelectTab("recent")'
-                title="Recently used">
-            ⏱️
-        </button>
+@if (IsOpen)
+{
+    <div class="emoji-picker-backdrop" 
+         @onclick="HandleBackdropClick"
+         @onclick:stopPropagation>
         
-        @if (_allCategories != null)
-        {
-            @foreach (var category in _allCategories)
-            {
-                var icon = GetCategoryIcon(category.Name);
-                var categoryName = category.Name;
+        <div class="emoji-picker emoji-picker-open"
+             role="dialog"
+             aria-label="Emoji picker"
+             aria-modal="true"
+             @onclick:stopPropagation
+             @onkeydown="HandleKeyDown"
+             @ref="_pickerElement">
+            
+            <!-- Search Box -->
+            <div class="emoji-picker-search">
+                <label for="emoji-search" class="sr-only">Search emojis</label>
+                <input id="emoji-search"
+                       type="text" 
+                       role="searchbox"
+                       aria-label="Search emojis"
+                       aria-controls="emoji-content"
+                       placeholder="Search emojis..." 
+                       value="@searchQuery"
+                       @oninput="@(e => OnSearchInput(e))"
+                       @onkeydown="HandleSearchKeyDown"
+                       @onkeydown:stopPropagation
+                       @ref="_searchInput"
+                       class="emoji-search-input" />
+            </div>
+            
+            <!-- Tab Bar -->
+            <div class="emoji-tabs" 
+                 role="tablist"
+                 aria-label="Emoji categories"
+                 @onkeydown="HandleTabsContainerKeyDown"
+                 @onkeydown:preventDefault
+                 @onkeydown:stopPropagation>
+                @{
+                    var tabIndex = 0;
+                }
                 <button type="button" 
-                        class="emoji-tab @(activeTab == categoryName ? "active" : "")"
-                        @onclick="() => SelectTab(categoryName)"
-                        title="@categoryName">
-                    @icon
+                        role="tab"
+                        aria-selected="@(activeTab == "recent")"
+                        aria-controls="emoji-content"
+                        class="emoji-tab @(activeTab == "recent" ? "active" : "")"
+                        data-tab-name="recent"
+                        data-tab-index="@tabIndex"
+                        @onclick='() => SelectTab("recent")'
+                        title="Recently used"
+                        tabindex="@(activeTab == "recent" ? 0 : -1)">
+                    <span aria-hidden="true">⏱️</span>
+                    <span class="sr-only">Recently used</span>
                 </button>
-            }
-        }
-    </div>
-    
-    <!-- Content Area -->
-    <div class="emoji-picker-content">
-        @if (_categories == null)
-        {
-            <div class="emoji-picker-loading">Loading emojis...</div>
-        }
-        else if (!_categories.Any())
-        {
-            <div class="emoji-picker-empty">
-                @if (activeTab == "recent")
+                
+                @if (_allCategories != null)
                 {
-                    <span>No recent emojis yet</span>
+                    @foreach (var category in _allCategories)
+                    {
+                        tabIndex++;
+                        var icon = GetCategoryIcon(category.Name);
+                        var categoryName = category.Name;
+                        <button type="button" 
+                                role="tab"
+                                aria-selected="@(activeTab == categoryName)"
+                                aria-controls="emoji-content"
+                                class="emoji-tab @(activeTab == categoryName ? "active" : "")"
+                                data-tab-name="@categoryName"
+                                data-tab-index="@tabIndex"
+                                @onclick="() => SelectTab(categoryName)"
+                                title="@categoryName"
+                                tabindex="@(activeTab == categoryName ? 0 : -1)">
+                            <span aria-hidden="true">@icon</span>
+                            <span class="sr-only">@categoryName</span>
+                        </button>
+                    }
+                }
+            </div>
+            
+            <!-- Content Area -->
+            <div id="emoji-content" 
+                 class="emoji-picker-content"
+                 role="tabpanel"
+                 aria-label="@activeTab emojis"
+                 aria-live="polite"
+                 @onkeydown="HandleEmojiContainerKeyDown"
+                 @onkeydown:preventDefault
+                 @onkeydown:stopPropagation>
+                @if (_categories == null)
+                {
+                    <div class="emoji-picker-loading" role="status" aria-live="polite">
+                        <span>Loading emojis...</span>
+                    </div>
+                }
+                else if (!_categories.Any())
+                {
+                    <div class="emoji-picker-empty" role="status">
+                        @if (activeTab == "recent")
+                        {
+                            <span>No recent emojis yet. Select an emoji to get started.</span>
+                        }
+                        else
+                        {
+                            <span>No emojis found matching "@searchQuery"</span>
+                        }
+                    </div>
                 }
                 else
                 {
-                    <span>No emojis found</span>
+                    @foreach (var category in _categories)
+                    {
+                        <div class="emoji-category">
+                            <h4 class="emoji-category-title" id="category-@category.Name.Replace(" ", "-")">
+                                @category.Name
+                            </h4>
+                            <div class="emoji-grid" 
+                                 role="grid"
+                                 aria-labelledby="category-@category.Name.Replace(" ", "-")">
+                                @foreach (var emoji in category.Emojis)
+                                {
+                                    var emojiRef = emoji;
+                                    <button type="button" 
+                                            class="emoji-item" 
+                                            role="gridcell"
+                                            tabindex="-1"
+                                            @onclick="() => SelectEmoji(emojiRef)"
+                                            @onclick:stopPropagation
+                                            aria-label="@emojiRef.Name emoji"
+                                            title="@emojiRef.Name"
+                                            data-emoji-code="@emojiRef.Code">
+                                        <span aria-hidden="true">@emojiRef.Char</span>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
                 }
             </div>
-        }
-        else
-        {
-            @foreach (var category in _categories)
-            {
-                <div class="emoji-category">
-                    <h4 class="emoji-category-title">@category.Name</h4>
-                    <div class="emoji-grid">
-                        @foreach (var emoji in category.Emojis)
-                        {
-                            <button type="button" 
-                                    class="emoji-item" 
-                                    @onclick="() => SelectEmoji(emoji)"
-                                    @onclick:stopPropagation
-                                    title="@emoji.Name"
-                                    tabindex="-1">
-                                @emoji.Char
-                            </button>
-                        }
-                    </div>
-                </div>
-            }
-        }
+            
+            <!-- Screen reader announcements -->
+            <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
+                @_screenReaderAnnouncement
+            </div>
+        </div>
     </div>
-</div>
+}
