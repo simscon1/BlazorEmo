@@ -1,0 +1,85 @@
+﻿@using BlazorEmoji.Models
+@using BlazorEmoji.Services
+@inject IEmojiService EmojiService
+
+<div class="emoji-picker @(IsOpen ? "emoji-picker-open" : "")"
+     @onclick:stopPropagation>
+    
+    <!-- Search Box -->
+    <div class="emoji-picker-search">
+        <input type="text" 
+               placeholder="Search emojis..." 
+               @bind="searchQuery" 
+               @bind:event="oninput"
+               @onkeydown="HandleKeyDown"
+               class="emoji-search-input" />
+    </div>
+    
+    <!-- Tab Bar -->
+    <div class="emoji-tabs">
+        <button type="button" 
+                class="emoji-tab @(activeTab == "recent" ? "active" : "")"
+                @onclick='() => SelectTab("recent")'
+                title="Recently used">
+            ⏱️
+        </button>
+        
+        @if (_allCategories != null)
+        {
+            @foreach (var category in _allCategories)
+            {
+                var icon = GetCategoryIcon(category.Name);
+                var categoryName = category.Name;
+                <button type="button" 
+                        class="emoji-tab @(activeTab == categoryName ? "active" : "")"
+                        @onclick="() => SelectTab(categoryName)"
+                        title="@categoryName">
+                    @icon
+                </button>
+            }
+        }
+    </div>
+    
+    <!-- Content Area -->
+    <div class="emoji-picker-content">
+        @if (_categories == null)
+        {
+            <div class="emoji-picker-loading">Loading emojis...</div>
+        }
+        else if (!_categories.Any())
+        {
+            <div class="emoji-picker-empty">
+                @if (activeTab == "recent")
+                {
+                    <span>No recent emojis yet</span>
+                }
+                else
+                {
+                    <span>No emojis found</span>
+                }
+            </div>
+        }
+        else
+        {
+            @foreach (var category in _categories)
+            {
+                <div class="emoji-category">
+                    <h4 class="emoji-category-title">@category.Name</h4>
+                    <div class="emoji-grid">
+                        @foreach (var emoji in category.Emojis)
+                        {
+                            <button type="button" 
+                                    class="emoji-item" 
+                                    @onclick="() => SelectEmoji(emoji)"
+                                    @onclick:stopPropagation
+                                    title="@emoji.Name"
+                                    tabindex="-1">
+                                @emoji.Char
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
