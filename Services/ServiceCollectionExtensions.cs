@@ -7,7 +7,8 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddEmojiServices(this IServiceCollection services)
     {
-        services.AddScoped<IEmojiService, EmojiService>(); 
+        services.AddScoped<IEmojiService, EmojiService>();
+        services.AddScoped<IRecentEmojiService, RecentEmojiService>();
         
         return services;
     }

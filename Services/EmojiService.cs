@@ -7,12 +7,12 @@ public class EmojiService : IEmojiService
 {
     private List<EmojiCategory>? _categories;
     private readonly HttpClient _httpClient;
-    private readonly List<Models.Emoji> _recentEmojis = new();
-    private const int MaxRecentEmojis = 24;
+    private readonly IRecentEmojiService _recentEmojiService;
 
-    public EmojiService(HttpClient httpClient)
+    public EmojiService(HttpClient httpClient, IRecentEmojiService recentEmojiService)
     {
         _httpClient = httpClient;
+        _recentEmojiService = recentEmojiService;
     }
 
     public async Task<List<EmojiCategory>> GetAllCategoriesAsync()
@@ -61,24 +61,12 @@ public class EmojiService : IEmojiService
 
     public Task<List<Models.Emoji>> GetRecentAsync()
     {
-        return Task.FromResult(_recentEmojis.ToList());
+        return _recentEmojiService.GetRecentAsync();
     }
 
     public Task AddRecentAsync(Models.Emoji emoji)
     {
-        // Remove if already exists (to avoid duplicates)
-        _recentEmojis.RemoveAll(e => e.Code == emoji.Code);
-        
-        // Add to the front of the list
-        _recentEmojis.Insert(0, emoji);
-        
-        // Keep only the maximum number of recent emojis
-        if (_recentEmojis.Count > MaxRecentEmojis)
-        {
-            _recentEmojis.RemoveAt(_recentEmojis.Count - 1);
-        }
-        
-        return Task.CompletedTask;
+        return _recentEmojiService.AddRecentAsync(emoji);
     }
 
     private class EmojiData
