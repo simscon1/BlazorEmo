@@ -6,15 +6,27 @@ using System.Diagnostics;
 
 namespace BlazorEmoji.Components;
 
+/// <summary>
+/// A fully accessible emoji picker component with keyboard navigation and screen reader support.
+/// </summary>
 public partial class EmojiPicker : ComponentBase, IAsyncDisposable
 {
-    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    /// <summary>
+    /// Gets or sets whether the emoji picker is visible.
+    /// </summary>
+    [Parameter] public bool IsOpen { get; set; }
+    
+    /// <summary>
+    /// Event callback invoked when an emoji is selected.
+    /// </summary>
+    [Parameter] public EventCallback<Models.Emoji> OnEmojiSelected { get; set; }
+    
+    /// <summary>
+    /// Event callback invoked when the picker is closed.
+    /// </summary>
+    [Parameter] public EventCallback OnClose { get; set; }
     
     private IJSObjectReference? _jsModule;
-    
-    [Parameter] public bool IsOpen { get; set; }
-    [Parameter] public EventCallback<Models.Emoji> OnEmojiSelected { get; set; }
-    [Parameter] public EventCallback OnClose { get; set; }
     
     private string searchQuery = "";
     private string activeTab = "recent";
