@@ -25,8 +25,8 @@
                        aria-label="Search emojis"
                        aria-controls="emoji-content"
                        placeholder="Search emojis..." 
-                       @bind="searchQuery" 
-                       @bind:event="oninput"
+                       value="@searchQuery"
+                       @oninput="@(e => OnSearchInput(e))"
                        @onkeydown="HandleSearchKeyDown"
                        @onkeydown:stopPropagation
                        @ref="_searchInput"

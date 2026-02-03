@@ -36,7 +36,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
     {
         if (IsOpen && !string.IsNullOrWhiteSpace(searchQuery))
         {
-            await UpdateSearch();
+            await UpdateSearch(); // ✅ Called on every keystroke
         }
         else if (IsOpen && _categories == null)
         {
@@ -92,16 +92,16 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
         Debug.WriteLine($"[EmojiPicker] Loaded {_categories?.Count ?? 0} categories for tab '{activeTab}'");
     }
     
+    // This should be called automatically when you type
     private async Task UpdateSearch()
     {
         if (string.IsNullOrWhiteSpace(searchQuery))
         {
-            await LoadTabContent();
-            await AnnounceToScreenReader($"{GetEmojiCount()} emojis available.");
+            await LoadTabContent(); // Clear search, show current tab
         }
         else
         {
-            _categories = await EmojiService.SearchAsync(searchQuery);
+            _categories = await EmojiService.SearchAsync(searchQuery); // ✅ Filter emojis
             var count = GetEmojiCount();
             await AnnounceToScreenReader($"{count} emoji{(count != 1 ? "s" : "")} found for {searchQuery}.");
             Debug.WriteLine($"[EmojiPicker] Search '{searchQuery}' found {count} emojis");
@@ -395,5 +395,12 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
         {
             await _jsModule.DisposeAsync();
         }
+    }
+
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        searchQuery = e.Value?.ToString() ?? "";
+        Debug.WriteLine($"[EmojiPicker] Search input changed to: '{searchQuery}'");
+        await UpdateSearch();
     }
 }
