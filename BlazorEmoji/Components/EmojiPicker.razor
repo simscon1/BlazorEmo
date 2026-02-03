@@ -1,6 +1,8 @@
 ﻿@using BlazorEmoji.Models
 @using BlazorEmoji.Services
+@using Microsoft.JSInterop
 @inject IEmojiService EmojiService
+@inject IJSRuntime JSRuntime
 
 @if (IsOpen)
 {
