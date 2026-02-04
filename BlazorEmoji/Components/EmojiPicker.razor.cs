@@ -42,7 +42,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
     private ElementReference _searchInput;
     private ElementReference _pickerElement;
     private int _focusedEmojiIndex = -1;
-
+    private string _hoveredEmojiName = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -90,6 +90,10 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
         activeTab = tabName;
         searchQuery = "";
         _focusedEmojiIndex = -1;
+        
+        // Update the label to show tab name
+        _hoveredEmojiName = FormatTabName(tabName);
+        
         await LoadTabContent();
         await AnnounceToScreenReader($"{tabName} category selected. {GetEmojiCount()} emojis available.");
     }
@@ -181,9 +185,16 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
 
     private async Task HandleTabsContainerKeyDown(KeyboardEventArgs e)
     {
-        Debug.WriteLine($"[EmojiPicker] Tabs container key: {e.Key}");
+        Debug.WriteLine($"[EmojiPicker] Tabs container key: {e.Key}, Shift: {e.ShiftKey}");
         var currentTabIndex = GetCurrentTabIndex();
         var allTabs = GetAllTabNames();
+        
+        // Handle Shift+Tab to go back to search
+        if (e.Key == "Tab" && e.ShiftKey)
+        {
+            await FocusSearch();
+            return;
+        }
         
         switch (e.Key)
         {
@@ -225,6 +236,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
                 await FocusTab(allTabs.Count - 1);
                 break;
                 
+            case "Tab":  // Tab key moves to emoji list
             case "ArrowDown":
             case "Enter":
             case " ":
@@ -239,12 +251,20 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
 
     private async Task HandleEmojiContainerKeyDown(KeyboardEventArgs e)
     {
-        Debug.WriteLine($"[EmojiPicker] Emoji container key: {e.Key}");
+        Debug.WriteLine($"[EmojiPicker] Emoji container key: {e.Key}, Shift: {e.ShiftKey}");
         
         var allEmojis = _categories?.SelectMany(c => c.Emojis).ToList() ?? new List<Models.Emoji>();
         if (allEmojis.Count == 0) return;
 
         var currentIndex = _focusedEmojiIndex >= 0 ? _focusedEmojiIndex : 0;
+
+        // Handle Shift+Tab to go back to tabs
+        if (e.Key == "Tab" && e.ShiftKey)
+        {
+            var tabIndex = GetCurrentTabIndex();
+            await FocusTab(tabIndex);
+            return;
+        }
 
         switch (e.Key)
         {
@@ -325,6 +345,11 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
         if (index < 0 || index >= allTabs.Count || _jsModule == null) return;
 
         var tabName = allTabs[index];
+        
+        // Update the label to show tab name when navigating with keyboard
+        _hoveredEmojiName = FormatTabName(tabName);
+        StateHasChanged();
+        
         Debug.WriteLine($"[EmojiPicker] Focusing tab {index}: {tabName}");
         
         try
@@ -348,7 +373,13 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
         }
 
         _focusedEmojiIndex = index;
-        var emojiCode = allEmojis[index].Code;
+        var emoji = allEmojis[index];
+        
+        // Update the label to show emoji name when navigating with keyboard
+        _hoveredEmojiName = emoji.Name;
+        StateHasChanged();
+        
+        var emojiCode = emoji.Code;
         Debug.WriteLine($"[EmojiPicker] Focusing emoji {index}: {emojiCode}");
         
         try
@@ -423,5 +454,35 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
         searchQuery = e.Value?.ToString() ?? "";
         Debug.WriteLine($"[EmojiPicker] Search input changed to: '{searchQuery}'");
         await UpdateSearch();
+    }
+
+    private void OnEmojiMouseEnter(Emoji emoji)
+    {
+        _hoveredEmojiName = emoji.Name;
+    }
+
+    private void OnEmojiMouseLeave()
+    {
+        _hoveredEmojiName = string.Empty;
+    }
+
+    private void OnTabMouseEnter(string tabName)
+    {
+        _hoveredEmojiName = tabName;
+    }
+
+    private void OnTabMouseLeave()
+    {
+        _hoveredEmojiName = string.Empty;
+    }
+
+    // Helper method to format tab names
+    private string FormatTabName(string tabName)
+    {
+        return tabName switch
+        {
+            "recent" => "Recently Used",
+            _ => tabName
+        };
     }
 }

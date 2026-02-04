@@ -150,7 +150,7 @@
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 #f1f5f9;
     flex-shrink: 0;
-    z-index: 5;
+    z-index: 15; /* Increased from 5 to 15 (higher than search's z-index: 10) */
     position: relative;
 }
 
@@ -219,7 +219,7 @@
     margin-top: 0;
 }
 
-/* Fixed category header */
+/* Fixed category header with emoji name display */
 .emoji-content-header {
     position: sticky;
     top: 0;
@@ -230,6 +230,10 @@
     border-bottom: 1px solid #e5e7eb;
     z-index: 10;
     flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
 }
 
 .emoji-current-category {
@@ -238,8 +242,31 @@
     color: #6b7280;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    display: block;
+    flex-shrink: 0;
 }
+
+.emoji-name-display {
+    font-size: 11px;
+    font-weight: 500;
+    color: #3b82f6;
+    text-align: right;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-transform: uppercase;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+    .emoji-name-display {
+        color: #60a5fa;
+    }
+}
+
+/* Optional: Remove or comment out all tooltip styles since they're not needed anymore */
+/* You can delete from line "Custom Tooltip Styles" to the end of tooltip styles */
 
 /* Scrollable content area */
 .emoji-scrollable-content {
@@ -606,23 +633,13 @@
     position: relative;
 }
 
-.emoji-item::before,
-.emoji-item::after,
-.emoji-tab::before,
-.emoji-tab::after {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease, transform 0.2s ease;
-    z-index: 100001;
-}
-
-.emoji-item::after {
+/* Tab tooltip bubble */
+/*.emoji-tab::after {
     content: attr(data-tooltip);
     position: absolute;
-    top: calc(100% + 3px);
+    bottom: calc(100% + 3px);
     left: 50%;
-    transform: translateX(-50%) translateY(2px);
+    transform: translateX(-50%) translateY(-2px);
     padding: 6px 10px;
     background-color: #1f2937;
     color: #ffffff;
@@ -631,138 +648,34 @@
     white-space: nowrap;
     border-radius: 6px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
+}*/   
 
-.emoji-tab::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    top: calc(100% + 3px);
-    left: 50%;
-    transform: translateX(-50%) translateY(2px);
-    padding: 6px 10px;
-    background-color: #1f2937;
-    color: #ffffff;
-    font-size: 12px;
-    font-weight: 500;
-    white-space: nowrap;
-    border-radius: 6px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-.emoji-item::before,
-.emoji-tab::before {
+/* Tab tooltip arrow */
+/*.emoji-tab::before {
     content: '';
     position: absolute;
-    top: calc(100% - 1px);
+    bottom: calc(100% - 1px);
     left: 50%;
-    transform: translateX(-50%) translateY(2px);
+    transform: translateX(-50%) translateY(-2px);
     border: 5px solid transparent;
-    border-bottom-color: #1f2937;
-}
+    border-top-color: #1f2937;
+}*/
 
-.emoji-item:hover::before,
-.emoji-item:hover::after,
-.emoji-item:focus::before,
-.emoji-item:focus::after,
+/* Update hover/focus states for tabs */
 .emoji-tab:hover::before,
 .emoji-tab:hover::after,
 .emoji-tab:focus::before,
 .emoji-tab:focus::after {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateX(-50%) translateY(0); /* Slide to final position */
 }
 
-.emoji-item:active::before,
-.emoji-item:active::after {
-    opacity: 0;
-}
-
-/* Left edge adjustment */
-.emoji-item:nth-child(8n+1)::after,
-.emoji-item:nth-child(8n+2)::after,
-.emoji-item:nth-child(8n+3)::after,
-.emoji-item:nth-child(8n+4)::after {
-    left: 0;
-    transform: translateX(0) translateY(2px);
-}
-
-.emoji-item:nth-child(8n+1):hover::after,
-.emoji-item:nth-child(8n+1):focus::after,
-.emoji-item:nth-child(8n+2):hover::after,
-.emoji-item:nth-child(8n+2):focus::after,
-.emoji-item:nth-child(8n+3):hover::after,
-.emoji-item:nth-child(8n+3):focus::after,
-.emoji-item:nth-child(8n+4):hover::after,
-.emoji-item:nth-child(8n+4):focus::after {
-    transform: translateX(0) translateY(0);
-}
-
-.emoji-item:nth-child(8n+1)::before,
-.emoji-item:nth-child(8n+2)::before,
-.emoji-item:nth-child(8n+3)::before,
-.emoji-item:nth-child(8n+4)::before {
-    left: 20px;
-    transform: translateX(0) translateY(2px);
-}
-
-.emoji-item:nth-child(8n+1):hover::before,
-.emoji-item:nth-child(8n+1):focus::before,
-.emoji-item:nth-child(8n+2):hover::before,
-.emoji-item:nth-child(8n+2):focus::before,
-.emoji-item:nth-child(8n+3):hover::before,
-.emoji-item:nth-child(8n+3):focus::before,
-.emoji-item:nth-child(8n+4):hover::before,
-.emoji-item:nth-child(8n+4):focus::before {
-    transform: translateX(0) translateY(0);
-}
-
-/* Right edge adjustment */
-.emoji-item:nth-child(8n+5)::after,
-.emoji-item:nth-child(8n+6)::after,
-.emoji-item:nth-child(8n+7)::after,
-.emoji-item:nth-child(8n)::after {
-    right: 0;
-    left: auto;
-    transform: translateX(0) translateY(2px);
-}
-
-.emoji-item:nth-child(8n+5):hover::after,
-.emoji-item:nth-child(8n+5):focus::after,
-.emoji-item:nth-child(8n+6):hover::after,
-.emoji-item:nth-child(8n+6):focus::after,
-.emoji-item:nth-child(8n+7):hover::after,
-.emoji-item:nth-child(8n+7):focus::after,
-.emoji-item:nth-child(8n):hover::after,
-.emoji-item:nth-child(8n):focus::after {
-    transform: translateX(0) translateY(0);
-}
-
-.emoji-item:nth-child(8n+5)::before,
-.emoji-item:nth-child(8n+6)::before,
-.emoji-item:nth-child(8n+7)::before,
-.emoji-item:nth-child(8n)::before {
-    right: 20px;
-    left: auto;
-    transform: translateX(0) translateY(2px);
-}
-
-.emoji-item:nth-child(8n+5):hover::before,
-.emoji-item:nth-child(8n+5):focus::before,
-.emoji-item:nth-child(8n+6):hover::before,
-.emoji-item:nth-child(8n+6):focus::before,
-.emoji-item:nth-child(8n+7):hover::before,
-.emoji-item:nth-child(8n+7):focus::before,
-.emoji-item:nth-child(8n):hover::before,
-.emoji-item:nth-child(8n):focus::before {
-    transform: translateX(0) translateY(0);
-}
-
-/* Tab tooltips - left edge */
+/* Left edge tab tooltips */
 .emoji-tab:first-child::after,
 .emoji-tab:nth-child(2)::after,
 .emoji-tab:nth-child(3)::after {
     left: 0;
-    transform: translateX(0) translateY(2px);
+    transform: translateX(0) translateY(-2px);
 }
 
 .emoji-tab:first-child:hover::after,
@@ -778,7 +691,7 @@
 .emoji-tab:nth-child(2)::before,
 .emoji-tab:nth-child(3)::before {
     left: 20px;
-    transform: translateX(0) translateY(2px);
+    transform: translateX(0) translateY(-2px);
 }
 
 .emoji-tab:first-child:hover::before,
@@ -790,81 +703,16 @@
     transform: translateX(0) translateY(0);
 }
 
-/* Dark mode tooltip adjustments */
+/* Dark mode - tab tooltip */
 @media (prefers-color-scheme: dark) {
-    .emoji-item::after,
-    .emoji-tab::after {
-        background-color: #f9fafb;
-        color: #1f2937;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-    }
-    
-    .emoji-item::before,
     .emoji-tab::before {
-        border-bottom-color: #f9fafb;
+        border-top-color: #f9fafb;
     }
 }
 
-/* Respect reduced motion */
-@media (prefers-reduced-motion: reduce) {
-    .emoji-item::before,
-    .emoji-item::after,
-    .emoji-tab::before,
-    .emoji-tab::after {
-        transition: none;
-    }
-}
-
-/* Accessibility: Ensure tooltips work with keyboard navigation */
-.emoji-item:focus-visible::after,
-.emoji-tab:focus-visible::after {
-    opacity: 1;
-}
-
-/* High contrast mode support for tooltips */
+/* High contrast mode - tab tooltip */
 @media (forced-colors: active) {
-    .emoji-item::after,
-    .emoji-tab::after {
-        border: 1px solid CanvasText;
-        background-color: Canvas;
-        color: CanvasText;
-    }
-    
-    .emoji-item::before,
     .emoji-tab::before {
-        border-bottom-color: CanvasText;
-    }
-}
-
-/* Responsive adjustments for smaller grids */
-@media (max-width: 400px) {
-    .emoji-item:nth-child(6n+1)::after,
-    .emoji-item:nth-child(6n+2)::after,
-    .emoji-item:nth-child(6n+3)::after {
-        left: 0;
-        transform: translateX(0) translateY(2px);
-    }
-    
-    .emoji-item:nth-child(6n+4)::after,
-    .emoji-item:nth-child(6n+5)::after,
-    .emoji-item:nth-child(6n)::after {
-        right: 0;
-        left: auto;
-        transform: translateX(0) translateY(2px);
-    }
-}
-
-@media (max-width: 320px) {
-    .emoji-item:nth-child(5n+1)::after,
-    .emoji-item:nth-child(5n+2)::after {
-        left: 0;
-        transform: translateX(0) translateY(2px);
-    }
-    
-    .emoji-item:nth-child(5n+4)::after,
-    .emoji-item:nth-child(5n)::after {
-        right: 0;
-        left: auto;
-        transform: translateX(0) translateY(2px);
+        border-top-color: CanvasText;
     }
 }
