@@ -53,7 +53,7 @@
                         data-tab-name="recent"
                         data-tab-index="@tabIndex"
                         @onclick='() => SelectTab("recent")'
-                        title="Recently used"
+                        data-tooltip="Recently used"
                         tabindex="@(activeTab == "recent" ? 0 : -1)">
                     <span aria-hidden="true">⏱️</span>
                     <span class="sr-only">Recently used</span>
@@ -74,7 +74,7 @@
                                 data-tab-name="@categoryName"
                                 data-tab-index="@tabIndex"
                                 @onclick="() => SelectTab(categoryName)"
-                                title="@categoryName"
+                                data-tooltip="@categoryName"
                                 tabindex="@(activeTab == categoryName ? 0 : -1)">
                             <span aria-hidden="true">@icon</span>
                             <span class="sr-only">@categoryName</span>
@@ -92,55 +92,60 @@
                  @onkeydown="HandleEmojiContainerKeyDown"
                  @onkeydown:preventDefault
                  @onkeydown:stopPropagation>
-                @if (_categories == null)
-                {
-                    <div class="emoji-picker-loading" role="status" aria-live="polite">
-                        <span>Loading emojis...</span>
-                    </div>
-                }
-                else if (!_categories.Any())
-                {
-                    <div class="emoji-picker-empty" role="status">
-                        @if (activeTab == "recent")
-                        {
-                            <span>No recent emojis yet. Select an emoji to get started.</span>
-                        }
-                        else
-                        {
-                            <span>No emojis found matching "@searchQuery"</span>
-                        }
-                    </div>
-                }
-                else
-                {
-                    @foreach (var category in _categories)
+    
+                <!-- Fixed Category Name Display -->
+                <div class="emoji-content-header">
+                    <span class="emoji-current-category">@activeTab</span>
+                </div>
+    
+                <div class="emoji-scrollable-content">
+                    @if (_categories == null)
                     {
-                        <div class="emoji-category">
-                            <h4 class="emoji-category-title" id="category-@category.Name.Replace(" ", "-")">
-                                @category.Name
-                            </h4>
-                            <div class="emoji-grid" 
-                                 role="grid"
-                                 aria-labelledby="category-@category.Name.Replace(" ", "-")">
-                                @foreach (var emoji in category.Emojis)
-                                {
-                                    var emojiRef = emoji;
-                                    <button type="button" 
-                                            class="emoji-item" 
-                                            role="gridcell"
-                                            tabindex="-1"
-                                            @onclick="() => SelectEmoji(emojiRef)"
-                                            @onclick:stopPropagation
-                                            aria-label="@emojiRef.Name emoji"
-                                            title="@emojiRef.Name"
-                                            data-emoji-code="@emojiRef.Code">
-                                        <span aria-hidden="true">@emojiRef.Char</span>
-                                    </button>
-                                }
-                            </div>
+                        <div class="emoji-picker-loading" role="status" aria-live="polite">
+                            <span>Loading emojis...</span>
                         </div>
                     }
-                }
+                    else if (!_categories.Any())
+                    {
+                        <div class="emoji-picker-empty" role="status">
+                            @if (activeTab == "recent")
+                            {
+                                <span>No recent emojis yet. Select an emoji to get started.</span>
+                            }
+                            else
+                            {
+                                <span>No emojis found matching "@searchQuery"</span>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var category in _categories)
+                        {
+                            <div class="emoji-category">
+                                <div class="emoji-grid" 
+                                     role="grid"
+                                     aria-labelledby="category-@category.Name.Replace(" ", "-")">
+                                    @foreach (var emoji in category.Emojis)
+                                    {
+                                        var emojiRef = emoji;
+                                        <button type="button" 
+                                                class="emoji-item" 
+                                                role="gridcell"
+                                                tabindex="-1"
+                                                @onclick="() => SelectEmoji(emojiRef)"
+                                                @onclick:stopPropagation
+                                                aria-label="@emojiRef.Name emoji"
+                                                data-tooltip="@emojiRef.Name"
+                                                data-emoji-code="@emojiRef.Code">
+                                            <span aria-hidden="true">@emojiRef.Char</span>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
             </div>
             
             <!-- Screen reader announcements -->

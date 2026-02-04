@@ -12,6 +12,12 @@ namespace BlazorEmoji.Components;
 public partial class EmojiPicker : ComponentBase, IAsyncDisposable
 {
     /// <summary>
+    /// Gets or sets whether to use the complete emoji dataset (1,585 emojis) or basic dataset (60 emojis).
+    /// Default is false (Basic dataset for faster loading).
+    /// </summary>
+    [Parameter] public bool UseCompleteDataset { get; set; } = false;
+    
+    /// <summary>
     /// Gets or sets whether the emoji picker is visible.
     /// </summary>
     [Parameter] public bool IsOpen { get; set; }
@@ -37,11 +43,13 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
     private ElementReference _pickerElement;
     private int _focusedEmojiIndex = -1;
 
+
     protected override async Task OnInitializedAsync()
     {
-        _allCategories = await EmojiService.GetAllCategoriesAsync();
+        // Load either Basic or Complete dataset based on parameter
+        _allCategories = await EmojiService.GetAllCategoriesAsync(UseCompleteDataset);
         await LoadTabContent();
-        Debug.WriteLine($"[EmojiPicker] Initialized with {_allCategories?.Count ?? 0} categories");
+        Debug.WriteLine($"[EmojiPicker] Initialized with {_allCategories?.Count ?? 0} categories ({(UseCompleteDataset ? "Complete" : "Basic")} dataset)");
     }
     
     protected override async Task OnParametersSetAsync()
