@@ -7,3 +7,12 @@
 /BlazorEmoji.Tests/obj
 /BlazorEmoji.Demo/bin/Debug/net10.0
 /BlazorEmoji.Demo/obj
+/BlazorEmo.Demo/obj/Debug/net10.0/BlazorEmo.Demo.AssemblyInfo.cs
+/BlazorEmo.Demo/obj/Debug/net10.0/BlazorEmo.Demo.AssemblyInfoInputs.cache
+/BlazorEmo.Demo/obj/Debug/net10.0/BlazorEmo.Demo.csproj.AssemblyReference.cache
+/BlazorEmo.Demo/obj/Debug/net10.0/rpswa.dswa.cache.json
+/BlazorEmo.Tests/bin/Debug/net10.0/.msCoverageSourceRootsMapping_BlazorEmo.Tests
+/BlazorEmo.Tests/bin/Debug/net10.0/CoverletSourceRootsMapping_BlazorEmo.Tests
+/BlazorEmo.Tests/obj/Debug/net10.0/BlazorEmo.Tests.AssemblyInfo.cs
+/BlazorEmo.Tests/obj/Debug/net10.0/BlazorEmo.Tests.AssemblyInfoInputs.cache
+/BlazorEmo.Tests/obj/Debug/net10.0/BlazorEmo.Tests.csproj.AssemblyReference.cache
