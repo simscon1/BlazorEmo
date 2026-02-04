@@ -38,6 +38,56 @@
     </div>
 
     <div class="demo-card">
+        <div class="card-header">
+            <h2>Event Callbacks Demo:</h2>
+            <button class="clear-button" @onclick="ClearEventTracking">
+                🗑️ Clear History
+            </button>
+        </div>
+        
+        <div class="event-log">
+            <div class="event-item">
+                <strong>Picker Opened:</strong>
+                <span class="event-value">@(pickerOpenCount) times</span>
+            </div>
+            <div class="event-item">
+                <strong>Current Category:</strong>
+                <span class="event-value">@(string.IsNullOrEmpty(currentCategory) ? "None" : currentCategory)</span>
+            </div>
+            <div class="event-item">
+                <strong>Current Search:</strong>
+                <span class="event-value">@(string.IsNullOrEmpty(currentSearch) ? "None" : currentSearch)</span>
+            </div>
+        </div>
+
+        @if (categoryHistory.Any())
+        {
+            <div class="history-section">
+                <h3>Category History:</h3>
+                <div class="history-pills">
+                    @foreach (var cat in categoryHistory.Take(5))
+                    {
+                        <span class="pill">@cat</span>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (searchHistory.Any())
+        {
+            <div class="history-section">
+                <h3>Search History:</h3>
+                <div class="history-pills">
+                    @foreach (var query in searchHistory.Take(5))
+                    {
+                        <span class="pill">@query</span>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="demo-card">
         <h2>Features:</h2>
         <ul class="features-list">
             <li>✨ Search emojis by name or keywords</li>
@@ -45,19 +95,29 @@
             <li>🕒 View recently used emojis</li>
             <li>⌨️ Full keyboard navigation support</li>
             <li>♿ Screen reader accessible</li>
+            <li>🔔 Event callbacks for analytics</li>
         </ul>
     </div>
 </div>
 
-<EmojiPicker 
-    IsOpen="@isPickerOpen" 
-    OnEmojiSelected="@HandleEmojiSelected" 
-    OnClose="@CloseEmojiPicker" 
-    UseCompleteDataset="true"/>
+<EmojiPicker IsOpen="@isPickerOpen"
+             OnEmojiSelected="@HandleEmojiSelected"
+             OnClose="@CloseEmojiPicker"
+             UseCompleteDataset="true"
+             OnOpened="@HandlePickerOpened"
+             OnCategoryChanged="@TrackCategorySwitch"
+             OnSearchChanged="@UpdateExternalSearchSuggestions" />
 
 @code {
     private bool isPickerOpen = false;
     private Emoji? selectedEmoji = null;
+
+    // Event callback tracking
+    private int pickerOpenCount = 0;
+    private string currentCategory = "";
+    private string currentSearch = "";
+    private List<string> categoryHistory = new();
+    private List<string> searchHistory = new();
 
     private void ToggleEmojiPicker()
     {
@@ -74,9 +134,52 @@
         selectedEmoji = emoji;
         isPickerOpen = false;
     }
+
+    private void HandlePickerOpened()
+    {
+        pickerOpenCount++;
+        Console.WriteLine($"Picker opened! (Total: {pickerOpenCount} times)");
+    }
+
+    private void TrackCategorySwitch(string category)
+    {
+        currentCategory = category;
+        
+        // Add to history (avoid duplicates of last item)
+        if (categoryHistory.Count == 0 || categoryHistory[^1] != category)
+        {
+            categoryHistory.Add(category);
+        }
+        
+        Console.WriteLine($"Category changed to: {category}");
+    }
+
+    private void UpdateExternalSearchSuggestions(string query)
+    {
+        currentSearch = query;
+        
+        // Add to history only if not empty and not duplicate of last
+        if (!string.IsNullOrWhiteSpace(query) && 
+            (searchHistory.Count == 0 || searchHistory[^1] != query))
+        {
+            searchHistory.Add(query);
+        }
+        
+        Console.WriteLine($"Search query: {query}");
+    }
+
+    private void ClearEventTracking()
+    {
+        pickerOpenCount = 0;
+        currentCategory = "";
+        currentSearch = "";
+        categoryHistory.Clear();
+        searchHistory.Clear();
+        Console.WriteLine("Event tracking cleared!");
+    }
 }
 
-<style>
+<style> 
     .demo-container {
         max-width: 800px;
         margin: 2rem auto;
@@ -105,15 +208,15 @@
         transition: all 0.2s;
     }
 
-    .emoji-button:hover {
-        background: #0056b3;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
-    }
+        .emoji-button:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        }
 
-    .emoji-button:active {
-        transform: translateY(0);
-    }
+        .emoji-button:active {
+            transform: translateY(0);
+        }
 
     .emoji-display {
         font-size: 2rem;
@@ -127,34 +230,98 @@
         border-left: 4px solid #007bff;
     }
 
-    .emoji-info h3 {
-        margin-top: 0;
-        color: #007bff;
+        .emoji-info h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+
+        .emoji-info ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .emoji-info li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+            .emoji-info li:last-child {
+                border-bottom: none;
+            }
+
+    .event-log {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
     }
 
-    .emoji-info ul {
-        list-style: none;
-        padding: 0;
-    }
-
-    .emoji-info li {
-        padding: 0.5rem 0;
+    .event-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
         border-bottom: 1px solid #dee2e6;
     }
 
-    .emoji-info li:last-child {
-        border-bottom: none;
+        .event-item:last-child {
+            border-bottom: none;
+        }
+
+        .event-item strong {
+            color: #555;
+        }
+
+    .event-value {
+        font-weight: 600;
+        color: #007bff;
+        font-size: 1.1rem;
     }
+
+    .history-section {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 2px solid #e9ecef;
+    }
+
+        .history-section h3 {
+            color: #007bff;
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+    .history-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .pill {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+        .pill:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
 
     .features-list {
         list-style: none;
         padding: 0;
     }
 
-    .features-list li {
-        padding: 0.75rem 0;
-        font-size: 1.1rem;
-    }
+        .features-list li {
+            padding: 0.75rem 0;
+            font-size: 1.1rem;
+        }
 
     h1 {
         color: #333;
@@ -164,5 +331,41 @@
     h2 {
         color: #555;
         margin-top: 0;
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .card-header h2 {
+        margin: 0;
+    }
+
+    .clear-button {
+        padding: 0.5rem 1rem;
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .clear-button:hover {
+        background: #c82333;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+    }
+
+    .clear-button:active {
+        transform: translateY(0);
     }
 </style>

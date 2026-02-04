@@ -13,29 +13,75 @@ namespace BlazorEmoji.Components;
 public partial class EmojiPicker : ComponentBase, IAsyncDisposable
 {
     /// <summary>
-    /// Gets or sets whether to use the complete emoji dataset (1,585 emojis) or basic dataset (60 emojis).
-    /// Default is false (Basic dataset for faster loading).
+    /// Gets or sets a value indicating whether the complete dataset is used for processing.
     /// </summary>
+    /// <remarks>When set to <see langword="true"/>, the entire dataset is utilized, which may affect performance
+    /// depending on the dataset size. Use this property when comprehensive data analysis is required.</remarks>
     [Parameter] public bool UseCompleteDataset { get; set; } = false;
-    
+
     /// <summary>
-    /// Gets or sets whether the emoji picker is visible.
+    /// Gets or sets a value indicating whether the component is currently open.
     /// </summary>
+    /// <remarks>This property can be used to control the visibility of the component. When set to <see
+    /// langword="true"/>, the component is displayed; otherwise, it is hidden.</remarks>
     [Parameter] public bool IsOpen { get; set; }
-    
+
     /// <summary>
-    /// Event callback invoked when an emoji is selected.
-    /// Passes the selected emoji object containing Name, Char, and Code properties.
+    /// Gets or sets the callback that is invoked when an emoji is selected.
     /// </summary>
+    /// <remarks>The callback receives the selected emoji as a parameter. Use this event to handle emoji selection in
+    /// the parent component, such as updating state or performing additional actions.</remarks>
     [Parameter] public EventCallback<Models.Emoji> OnEmojiSelected { get; set; }
-    
+
     /// <summary>
-    /// Event callback invoked when the picker is closed.
+    /// Gets or sets the callback that is invoked when the component is closed.
     /// </summary>
+    /// <remarks>Use this parameter to perform cleanup or update application state when the component is dismissed.
+    /// The callback is triggered whenever the component is closed, either by user interaction or
+    /// programmatically.</remarks>
     [Parameter] public EventCallback OnClose { get; set; }
-    
+
+    /// <summary>
+    /// Gets or sets the callback that is invoked when the component is opened.
+    /// </summary>
+    /// <remarks>Use this property to specify an action to perform when the component becomes visible or is
+    /// initialized. This is typically used to trigger additional logic or update state in response to the component
+    /// opening. Ensure that the assigned callback does not perform long-running operations to avoid blocking the
+    /// UI.</remarks>
+    [Parameter] public EventCallback OnOpened { get; set; }
+
+    /// <summary>
+    /// Gets or sets the callback that is invoked when the selected category changes.   
+    /// </summary>
+    /// <remarks>Use this parameter to handle category change events in the parent component. The callback
+    /// receives the new category name as its argument, allowing the parent to respond to user selection or update
+    /// related state.</remarks>
+    [Parameter] public EventCallback<string> OnCategoryChanged { get; set; }
+    /// <summary>
+    /// Gets or sets the callback that is invoked when the search text changes.
+    /// </summary>
+    /// <remarks>This callback is triggered each time the user modifies the search input, allowing the parent
+    /// component to respond to search queries in real time. Ensure that the callback implementation efficiently handles
+    /// frequent updates, as it may be called on every keystroke.</remarks>
+    [Parameter] public EventCallback<string> OnSearchChanged { get; set; }
+    /// <summary>
+    /// Gets or sets a callback function that is invoked before the component is closed to determine whether the close
+    /// action should proceed.
+    /// </summary>
+    /// <remarks>The callback should return a <see cref="Task{Boolean}"/> that resolves to <see
+    /// langword="true"/> to allow closing, or <see langword="false"/> to cancel the close action. This enables
+    /// asynchronous validation or user confirmation before the component is closed.</remarks>
+    [Parameter] public Func<Task<bool>>? OnBeforeClose { get; set; }
+    /// <summary>
+    /// Gets or sets the callback that is invoked when an unhandled exception occurs during component processing.
+    /// </summary>
+    /// <remarks>Assign this callback to provide custom error handling logic in the parent component. If not
+    /// set, unhandled exceptions may propagate and disrupt the normal operation of the application. The callback
+    /// receives the exception instance that was thrown.</remarks>
+    [Parameter] public EventCallback<Exception> OnError { get; set; }
+
     private IJSObjectReference? _jsModule;
-    
+
     private string searchQuery = "";
     private string activeTab = "recent";
     private List<EmojiCategory>? _categories;
@@ -65,6 +111,9 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
     private const int RENDER_DELAY_MS = 10;
     private const int SCREEN_READER_DELAY_MS = 100;
 
+    // Add this field near the top with other private fields
+    private bool _wasOpen = false;
+
     protected override async Task OnInitializedAsync()
     {
         // Load either Basic or Complete dataset based on parameter
@@ -72,12 +121,24 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
         await LoadTabContent();
         Debug.WriteLine($"[EmojiPicker] Initialized with {_allCategories?.Count ?? 0} categories ({(UseCompleteDataset ? "Complete" : "Basic")} dataset)");
     }
-    
+
+    // Update OnParametersSetAsync to track when picker opens
     protected override async Task OnParametersSetAsync()
     {
+        // Detect when picker transitions from closed to open
+        if (IsOpen && !_wasOpen)
+        {
+            await OnOpened.InvokeAsync();
+            _wasOpen = true;
+        }
+        else if (!IsOpen && _wasOpen)
+        {
+            _wasOpen = false;
+        }
+        
         if (IsOpen && !string.IsNullOrWhiteSpace(searchQuery))
         {
-            await UpdateSearch(); // ✅ Called on every keystroke
+            await UpdateSearch();
         }
         else if (IsOpen && _categories == null)
         {
@@ -104,36 +165,55 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
             {
                 _jsModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
                     "import", 
-                    cts.Token, // Add cancellation support
+                    cts.Token,
                     "./_content/BlazorEmoji/emoji-picker.js");
+                
+                Debug.WriteLine("[EmojiPicker] JS module loaded");
+                
+                // Focus search input
+                await _jsModule.InvokeVoidAsync("focusById", "emoji-search");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[EmojiPicker] Module load error: {ex.Message}");
+                await OnError.InvokeAsync(ex);
             }
             finally
             {
                 cts.Dispose();
             }
         }
+
+        if (IsOpen && firstRender)
+        {
+            await Task.Delay(50); // Give time for animations
+            await FocusSearch();
+        }
     }
-    
+
     private async Task SelectTab(string tabName)
     {
         Debug.WriteLine($"[EmojiPicker] Selecting tab: {tabName}");
         activeTab = tabName;
         searchQuery = "";
         _focusedEmojiIndex = -1;
-        
+
         // Update the label to show tab name
         _hoveredEmojiName = FormatTabName(tabName);
-        
+
         await LoadTabContent();
         await AnnounceToScreenReader($"Switched to {FormatTabName(tabName)} category. {GetEmojiCount()} emojis available. Press Tab to browse emojis.");
+
+        // Invoke OnCategoryChanged
+        await OnCategoryChanged.InvokeAsync(tabName);
     }
-    
+
     private async Task LoadTabContent()
     {
         if (activeTab == "recent")
         {
             var recentEmojis = await EmojiService.GetRecentAsync();
-            _categories = recentEmojis.Any() 
+            _categories = recentEmojis.Any()
                 ? new List<EmojiCategory> { new EmojiCategory { Name = "Recent", Emojis = recentEmojis } }
                 : new List<EmojiCategory>();
         }
@@ -145,7 +225,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
         }
         Debug.WriteLine($"[EmojiPicker] Loaded {_categories?.Count ?? 0} categories for tab '{activeTab}'");
     }
-    
+
     // This should be called automatically when you type
     private async Task UpdateSearch()
     {
@@ -161,7 +241,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
             Debug.WriteLine($"[EmojiPicker] Search '{searchQuery}' found {count} emojis");
         }
     }
-    
+
     private async Task SelectEmoji(Models.Emoji emoji)
     {
         Debug.WriteLine($"[EmojiPicker] Emoji selected: {emoji.Name} ({emoji.Char})");
@@ -169,7 +249,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
         await EmojiService.AddRecentAsync(emoji);
         await AnnounceToScreenReader($"{emoji.Name} emoji selected.");
         searchQuery = "";
-        
+
         // Refresh recent tab if it's active
         if (activeTab == "recent")
         {
@@ -179,15 +259,31 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
 
     private async Task HandleBackdropClick()
     {
+        await ClosePickerAsync();
+    }
+
+    private async Task ClosePickerAsync()
+    {
+        // Check if close is allowed
+        if (OnBeforeClose != null)
+        {
+            bool canClose = await OnBeforeClose.Invoke();
+            if (!canClose)
+            {
+                Debug.WriteLine("[EmojiPicker] Close cancelled by OnBeforeClose");
+                return;
+            }
+        }
+
         await OnClose.InvokeAsync();
     }
-    
+
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
         Debug.WriteLine($"[EmojiPicker] Container key: {e.Key}");
         if (e.Key == "Escape")
         {
-            await OnClose.InvokeAsync();
+            await ClosePickerAsync(); // Use new method
         }
     }
 
@@ -218,14 +314,14 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
         Debug.WriteLine($"[EmojiPicker] Tabs container key: {e.Key}, Shift: {e.ShiftKey}");
         var currentTabIndex = GetCurrentTabIndex();
         var allTabs = GetAllTabNames();
-        
+
         // Handle Shift+Tab to go back to search
         if (e.Key == "Tab" && e.ShiftKey)
         {
             await FocusSearch();
             return;
         }
-        
+
         switch (e.Key)
         {
             case "ArrowRight":
@@ -238,7 +334,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
                     await FocusTab(currentTabIndex + 1);
                 }
                 break;
-                
+
             case "ArrowLeft":
                 if (currentTabIndex > 0)
                 {
@@ -249,7 +345,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
                     await FocusTab(currentTabIndex - 1);
                 }
                 break;
-                
+
             case "Home":
                 var firstTab = allTabs[0];
                 await SelectTab(firstTab);
@@ -257,7 +353,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
                 await Task.Delay(RENDER_DELAY_MS);
                 await FocusTab(0);
                 break;
-                
+
             case "End":
                 var lastTab = allTabs[^1];
                 await SelectTab(lastTab);
@@ -265,7 +361,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
                 await Task.Delay(RENDER_DELAY_MS);
                 await FocusTab(allTabs.Count - 1);
                 break;
-                
+
             case "Tab":  // ✅ Tab key moves to emoji list (this was blocked!)
             case "ArrowDown":
             case "Enter":
@@ -282,7 +378,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
     private async Task HandleEmojiContainerKeyDown(KeyboardEventArgs e)
     {
         Debug.WriteLine($"[EmojiPicker] Emoji container key: {e.Key}, Shift: {e.ShiftKey}");
-        
+
         var allEmojis = _categories?.SelectMany(c => c.Emojis).ToList() ?? new List<Models.Emoji>();
         if (allEmojis.Count == 0) return;
 
@@ -311,14 +407,14 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
                     await FocusEmoji(currentIndex + 1);
                 }
                 break;
-                
+
             case "ArrowLeft":
                 if (currentIndex > 0)
                 {
                     await FocusEmoji(currentIndex - 1);
                 }
                 break;
-                
+
             case "ArrowDown":
                 var nextRowIndex = currentIndex + GRID_COLUMN_COUNT;
                 if (nextRowIndex < allEmojis.Count)
@@ -326,7 +422,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
                     await FocusEmoji(nextRowIndex);
                 }
                 break;
-                
+
             case "ArrowUp":
                 if (currentIndex >= GRID_COLUMN_COUNT)
                 {
@@ -338,11 +434,11 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
                     await FocusTab(tabIndex);
                 }
                 break;
-                
+
             case "Home":
                 await FocusEmoji(0);
                 break;
-                
+
             case "End":
                 await FocusEmoji(allEmojis.Count - 1);
                 break;
@@ -364,7 +460,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
     private async Task FocusSearch()
     {
         if (_jsModule == null) return;
-        
+
         try
         {
             await _jsModule.InvokeVoidAsync("focusById", "emoji-search");
@@ -382,13 +478,13 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
         if (index < 0 || index >= allTabs.Count || _jsModule == null) return;
 
         var tabName = allTabs[index];
-        
+
         // Update the label to show tab name when navigating with keyboard
         _hoveredEmojiName = FormatTabName(tabName);
         StateHasChanged();
-        
+
         Debug.WriteLine($"[EmojiPicker] Focusing tab {index}: {tabName}");
-        
+
         try
         {
             await _jsModule.InvokeVoidAsync("focusTabByName", tabName);
@@ -411,14 +507,14 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
 
         _focusedEmojiIndex = index;
         var emoji = allEmojis[index];
-        
+
         // Update the label to show emoji name when navigating with keyboard
         _hoveredEmojiName = emoji.Name;
         StateHasChanged();
-        
+
         var emojiCode = emoji.Code;
         Debug.WriteLine($"[EmojiPicker] Focusing emoji {index}: {emojiCode}");
-        
+
         try
         {
             await _jsModule.InvokeVoidAsync("focusEmojiByCode", emojiCode);
@@ -434,7 +530,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
     {
         _screenReaderAnnouncement = message;
         StateHasChanged();
-        
+
         await Task.Delay(SCREEN_READER_DELAY_MS);
         _screenReaderAnnouncement = "";
         StateHasChanged();
@@ -460,7 +556,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
         var allTabs = GetAllTabNames();
         return allTabs.IndexOf(activeTab);
     }
-    
+
     private string GetCategoryIcon(string categoryName)
     {
         return categoryName switch
@@ -491,6 +587,9 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
         searchQuery = e.Value?.ToString() ?? "";
         Debug.WriteLine($"[EmojiPicker] Search input changed to: '{searchQuery}'");
         await UpdateSearch();
+
+        // Invoke OnSearchChanged
+        await OnSearchChanged.InvokeAsync(searchQuery);
     }
 
     private void OnEmojiMouseEnter(Emoji emoji)
@@ -540,7 +639,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
     private async ValueTask SafeJsInvoke(string method, params object[] args)
     {
         if (_jsModule == null) return;
-    
+
         try
         {
             await _jsModule.InvokeVoidAsync(method, args);
