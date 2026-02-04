@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using System.Diagnostics;
+using System.Threading;
 
 namespace BlazorEmoji.Components;
 
@@ -24,6 +25,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
     
     /// <summary>
     /// Event callback invoked when an emoji is selected.
+    /// Passes the selected emoji object containing Name, Char, and Code properties.
     /// </summary>
     [Parameter] public EventCallback<Models.Emoji> OnEmojiSelected { get; set; }
     
@@ -41,8 +43,27 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
     private string _screenReaderAnnouncement = "";
     private ElementReference _searchInput;
     private ElementReference _pickerElement;
-    private int _focusedEmojiIndex = -1;
+
+    // Better
+    /// <summary>
+    /// The name of the currently hovered or keyboard-focused emoji/tab.
+    /// Displayed in the stationary label for user feedback.
+    /// </summary>
     private string _hoveredEmojiName = string.Empty;
+
+    /// <summary>
+    /// The zero-based index of the currently focused emoji in the flattened emoji list.
+    /// -1 indicates no emoji is focused.
+    /// </summary>
+    private int _focusedEmojiIndex = -1;
+
+    // Add constants
+    /// <summary>
+    /// Number of columns in the emoji grid layout.
+    /// </summary>
+    private const int GRID_COLUMN_COUNT = 8;
+    private const int RENDER_DELAY_MS = 10;
+    private const int SCREEN_READER_DELAY_MS = 100;
 
     protected override async Task OnInitializedAsync()
     {
@@ -64,22 +85,31 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
         }
     }
 
+    protected override void OnParametersSet()
+    {
+        if (!OnEmojiSelected.HasDelegate)
+        {
+            throw new InvalidOperationException(
+                "EmojiPicker requires the OnEmojiSelected callback to be set. " +
+                "Please provide a handler for emoji selection events.");
+        }
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Load module on first render OR when picker opens
         if (IsOpen && _jsModule == null)
         {
+            var cts = new CancellationTokenSource();
             try
             {
-                _jsModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", 
+                _jsModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                    "import", 
+                    cts.Token, // Add cancellation support
                     "./_content/BlazorEmoji/emoji-picker.js");
-                Debug.WriteLine("[EmojiPicker] JS module loaded");
-                
-                await _jsModule.InvokeVoidAsync("focusById", "emoji-search");
             }
-            catch (Exception ex)
+            finally
             {
-                Debug.WriteLine($"[EmojiPicker] Module load error: {ex.Message}");
+                cts.Dispose();
             }
         }
     }
@@ -95,7 +125,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
         _hoveredEmojiName = FormatTabName(tabName);
         
         await LoadTabContent();
-        await AnnounceToScreenReader($"{tabName} category selected. {GetEmojiCount()} emojis available.");
+        await AnnounceToScreenReader($"Switched to {FormatTabName(tabName)} category. {GetEmojiCount()} emojis available. Press Tab to browse emojis.");
     }
     
     private async Task LoadTabContent()
@@ -204,7 +234,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
                     var nextTab = allTabs[currentTabIndex + 1];
                     await SelectTab(nextTab);
                     StateHasChanged();
-                    await Task.Delay(10); // Allow re-render
+                    await Task.Delay(RENDER_DELAY_MS);
                     await FocusTab(currentTabIndex + 1);
                 }
                 break;
@@ -215,7 +245,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
                     var prevTab = allTabs[currentTabIndex - 1];
                     await SelectTab(prevTab);
                     StateHasChanged();
-                    await Task.Delay(10);
+                    await Task.Delay(RENDER_DELAY_MS);
                     await FocusTab(currentTabIndex - 1);
                 }
                 break;
@@ -224,7 +254,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
                 var firstTab = allTabs[0];
                 await SelectTab(firstTab);
                 StateHasChanged();
-                await Task.Delay(10);
+                await Task.Delay(RENDER_DELAY_MS);
                 await FocusTab(0);
                 break;
                 
@@ -232,11 +262,11 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
                 var lastTab = allTabs[^1];
                 await SelectTab(lastTab);
                 StateHasChanged();
-                await Task.Delay(10);
+                await Task.Delay(RENDER_DELAY_MS);
                 await FocusTab(allTabs.Count - 1);
                 break;
                 
-            case "Tab":  // Tab key moves to emoji list
+            case "Tab":  // ✅ Tab key moves to emoji list (this was blocked!)
             case "ArrowDown":
             case "Enter":
             case " ":
@@ -266,6 +296,13 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
             return;
         }
 
+        // ✅ ADD THIS - Handle Tab (forward) to wrap back to search
+        if (e.Key == "Tab" && !e.ShiftKey)
+        {
+            await FocusSearch(); // Complete the focus cycle
+            return;
+        }
+
         switch (e.Key)
         {
             case "ArrowRight":
@@ -283,7 +320,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
                 break;
                 
             case "ArrowDown":
-                var nextRowIndex = currentIndex + 8;
+                var nextRowIndex = currentIndex + GRID_COLUMN_COUNT;
                 if (nextRowIndex < allEmojis.Count)
                 {
                     await FocusEmoji(nextRowIndex);
@@ -291,9 +328,9 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
                 break;
                 
             case "ArrowUp":
-                if (currentIndex >= 8)
+                if (currentIndex >= GRID_COLUMN_COUNT)
                 {
-                    await FocusEmoji(currentIndex - 8);
+                    await FocusEmoji(currentIndex - GRID_COLUMN_COUNT);
                 }
                 else
                 {
@@ -363,7 +400,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
         }
     }
 
-    private async Task FocusEmoji(int index)
+    private async ValueTask FocusEmoji(int index)
     {
         var allEmojis = _categories?.SelectMany(c => c.Emojis).ToList();
         if (allEmojis == null || allEmojis.Count == 0 || index < 0 || index >= allEmojis.Count || _jsModule == null)
@@ -398,7 +435,7 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
         _screenReaderAnnouncement = message;
         StateHasChanged();
         
-        await Task.Delay(100);
+        await Task.Delay(SCREEN_READER_DELAY_MS);
         _screenReaderAnnouncement = "";
         StateHasChanged();
     }
@@ -484,5 +521,68 @@ public partial class EmojiPicker : ComponentBase, IAsyncDisposable
             "recent" => "Recently Used",
             _ => tabName
         };
+    }
+
+    private string GetAriaLabelForContent()
+    {
+        var count = GetEmojiCount();
+        return $"{FormatTabName(activeTab)}, {count} emoji{(count != 1 ? "s" : "")} available";
+    }
+
+    private string GetActiveFocusedEmojiId()
+    {
+        if (_focusedEmojiIndex < 0) return "";
+        var allEmojis = _categories?.SelectMany(c => c.Emojis).ToList();
+        if (allEmojis == null || _focusedEmojiIndex >= allEmojis.Count) return "";
+        return $"emoji-{allEmojis[_focusedEmojiIndex].Code}";
+    }
+
+    private async ValueTask SafeJsInvoke(string method, params object[] args)
+    {
+        if (_jsModule == null) return;
+    
+        try
+        {
+            await _jsModule.InvokeVoidAsync(method, args);
+        }
+        catch (JSException jsEx)
+        {
+            Debug.WriteLine($"[EmojiPicker] JS Error in {method}: {jsEx.Message}");
+            // Optionally show user-friendly error
+        }
+        catch (ObjectDisposedException)
+        {
+            Debug.WriteLine($"[EmojiPicker] Component disposed during {method}");
+        }
+    }
+
+    /// <summary>
+    /// Calculates the total number of rows needed for the emoji grid.
+    /// </summary>
+    /// <param name="emojiCount">Total number of emojis in the category.</param>
+    /// <returns>The number of rows required (1-based).</returns>
+    private int GetRowCount(int emojiCount)
+    {
+        return (int)Math.Ceiling(emojiCount / (double)GRID_COLUMN_COUNT);
+    }
+
+    /// <summary>
+    /// Calculates the row index for an emoji in the grid (1-based for ARIA).
+    /// </summary>
+    /// <param name="emojiIndex">Zero-based index of the emoji.</param>
+    /// <returns>1-based row index.</returns>
+    private int GetRowIndex(int emojiIndex)
+    {
+        return (emojiIndex / GRID_COLUMN_COUNT) + 1; // ARIA uses 1-based indexing
+    }
+
+    /// <summary>
+    /// Calculates the column index for an emoji in the grid (1-based for ARIA).
+    /// </summary>
+    /// <param name="emojiIndex">Zero-based index of the emoji.</param>
+    /// <returns>1-based column index.</returns>
+    private int GetColIndex(int emojiIndex)
+    {
+        return (emojiIndex % GRID_COLUMN_COUNT) + 1; // ARIA uses 1-based indexing
     }
 }

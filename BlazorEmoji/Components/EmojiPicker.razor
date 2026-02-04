@@ -13,11 +13,16 @@
         <div class="emoji-picker emoji-picker-open"
              role="dialog"
              aria-label="Emoji picker"
+             aria-describedby="emoji-picker-description"
              aria-modal="true"
              @onclick:stopPropagation
              @onkeydown="HandleKeyDown"
              @ref="_pickerElement">
             
+            <div id="emoji-picker-description" class="sr-only">
+                Search and select emojis by category or keyword. Use Tab to navigate, arrow keys to browse emojis, and Enter to select.
+            </div>
+
             <!-- Search Box -->
             <div class="emoji-picker-search">
                 <label for="emoji-search" class="sr-only">Search emojis</label>
@@ -89,7 +94,7 @@
             <div id="emoji-content" 
                  class="emoji-picker-content"
                  role="tabpanel"
-                 aria-label="@activeTab emojis"
+                 aria-label="@GetAriaLabelForContent()"
                  aria-live="polite"
                  @onkeydown="HandleEmojiContainerKeyDown"
                  @onkeydown:preventDefault
@@ -128,14 +133,22 @@
                             <div class="emoji-category">
                                 <div class="emoji-grid" 
                                      role="grid"
+                                     aria-rowcount="@GetRowCount(category.Emojis.Count)"
+                                     aria-colcount="8"
+                                     aria-activedescendant="@GetActiveFocusedEmojiId()"
                                      aria-labelledby="category-@category.Name.Replace(" ", "-")">
-                                    @foreach (var emoji in category.Emojis)
+                                    @for (int emojiIndex = 0; emojiIndex < category.Emojis.Count; emojiIndex++)
                                     {
+                                        var emoji = category.Emojis[emojiIndex];
                                         var emojiRef = emoji;
+                                        var currentIndex = emojiIndex;
                                         <button type="button" 
                                                 class="emoji-item" 
                                                 role="gridcell"
+                                                aria-rowindex="@GetRowIndex(currentIndex)"
+                                                aria-colindex="@GetColIndex(currentIndex)"
                                                 tabindex="-1"
+                                                id="emoji-@emojiRef.Code"
                                                 @onclick="() => SelectEmoji(emojiRef)"
                                                 @onclick:stopPropagation
                                                 @onmouseenter="() => OnEmojiMouseEnter(emojiRef)"

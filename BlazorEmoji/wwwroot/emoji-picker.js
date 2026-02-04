@@ -40,4 +40,32 @@ export function focusEmojiByCode(emojiCode) {
     return false;
 }
 
+export function trapFocus(element) {
+    const focusableElements = element.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstFocusable = focusableElements[0];
+    const lastFocusable = focusableElements[focusableElements.length - 1];
+
+    element.addEventListener('keydown', function(e) {
+        if (e.key !== 'Tab') return;
+
+        if (e.shiftKey) {
+            if (document.activeElement === firstFocusable) {
+                e.preventDefault();
+                lastFocusable.focus();
+            }
+        } else {
+            if (document.activeElement === lastFocusable) {
+                e.preventDefault();
+                firstFocusable.focus();
+            }
+        }
+    });
+}
+
+export function setActiveDescendant(gridElement, emojiId) {
+    gridElement.setAttribute('aria-activedescendant', emojiId);
+}
+
 console.log('[EmojiPicker] emoji-picker.js module loaded successfully');
