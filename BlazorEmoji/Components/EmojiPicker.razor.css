@@ -95,7 +95,8 @@
     display: none;
     width: fit-content;
     max-width: calc(100vw - 32px);
-    height: 500px;
+    height: 435px;
+    min-height: 400px;
     overflow: hidden;
     background-color: #ffffff;
     border: 2px solid #d1d5db;
