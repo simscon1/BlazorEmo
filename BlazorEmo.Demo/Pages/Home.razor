@@ -107,34 +107,12 @@
             <li>🔔 Event callbacks for analytics</li>
         </ul>
     </div>
-
-    <div class="demo-card">
-        <h2>SVG Badge Examples:</h2>
-        <div class="badge-showcase">
-            <div class="badge-example">
-                <p class="badge-label">Small (40px)</p>
-                @((MarkupString)SvgIcons.GetBadgeSvg(40))
-            </div>
-            <div class="badge-example">
-                <p class="badge-label">Medium (80px)</p>
-                @((MarkupString)SvgIcons.GetBadgeSvg(80))
-            </div>
-            <div class="badge-example">
-                <p class="badge-label">Large (120px)</p>
-                @((MarkupString)SvgIcons.GetBadgeSvg(120))
-            </div>
-        </div>
-        <div class="code-snippet">
-            <p><strong>Usage:</strong></p>
-            <code>@@((MarkupString)SvgIcons.GetBadgeSvg(80))</code>
-        </div>
-    </div>
-</div>
+ </div>
 
 <EmoPicker IsOpen="@isPickerOpen"
              OnEmojiSelected="@HandleEmojiSelected"
              OnClose="@CloseEmoPicker"
-             UseCompleteDataset="true"
+             UseCompleteDataset="false"
              OnOpened="@HandlePickerOpened"
              OnCategoryChanged="@TrackCategorySwitch"
              OnSearchChanged="@UpdateExternalSearchSuggestions" />
