@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorEmoji", "BlazorEmoji\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorEmoji.Tests", "BlazorEmoji.Tests\BlazorEmoji.Tests.csproj", "{F8DDBCA2-F04C-4B54-A495-9DD3F31A4B3B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorEmoji.Demo", "BlazorEmoji.Demo\BlazorEmoji.Demo.csproj", "{0AF3D2FE-2407-0ADE-2FCC-121AB4C4E96F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{F8DDBCA2-F04C-4B54-A495-9DD3F31A4B3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F8DDBCA2-F04C-4B54-A495-9DD3F31A4B3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F8DDBCA2-F04C-4B54-A495-9DD3F31A4B3B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0AF3D2FE-2407-0ADE-2FCC-121AB4C4E96F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0AF3D2FE-2407-0ADE-2FCC-121AB4C4E96F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0AF3D2FE-2407-0ADE-2FCC-121AB4C4E96F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0AF3D2FE-2407-0ADE-2FCC-121AB4C4E96F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

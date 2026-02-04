@@ -24,7 +24,7 @@ namespace BlazorEmoji.Tests
             services.AddScoped<IJSRuntime>(_ => mockJSRuntime.Object);
 
             // Act
-            services.AddEmojiServices();
+            services.AddEmojiServices("https://example.com/");
             var serviceProvider = services.BuildServiceProvider();
 
             // Assert
@@ -39,7 +39,7 @@ namespace BlazorEmoji.Tests
             var services = new ServiceCollection();
 
             // Act
-            services.AddEmojiServices();
+            services.AddEmojiServices("https://example.com/");
 
             // Assert
             var emojiServiceDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(IEmojiService));
@@ -56,7 +56,7 @@ namespace BlazorEmoji.Tests
             var services = new ServiceCollection();
 
             // Act
-            var result = services.AddEmojiServices();
+            var result = services.AddEmojiServices("https://example.com/");
 
             // Assert
             Assert.Same(services, result);
@@ -480,7 +480,7 @@ namespace BlazorEmoji.Tests
         {
             // Arrange
             _mockEmojiService
-                .Setup(s => s.GetAllCategoriesAsync())
+                .Setup(s => s.GetAllCategoriesAsync(false))
                 .ReturnsAsync(new List<EmojiCategory>());
 
             _mockEmojiService
@@ -500,7 +500,7 @@ namespace BlazorEmoji.Tests
         {
             // Arrange
             _mockEmojiService
-                .Setup(s => s.GetAllCategoriesAsync())
+                .Setup(s => s.GetAllCategoriesAsync(false))
                 .ReturnsAsync(new List<EmojiCategory>());
 
             _mockEmojiService
@@ -521,7 +521,7 @@ namespace BlazorEmoji.Tests
         {
             // Arrange
             _mockEmojiService
-                .Setup(s => s.GetAllCategoriesAsync())
+                .Setup(s => s.GetAllCategoriesAsync(false))
                 .ReturnsAsync(new List<EmojiCategory>());
 
             _mockEmojiService
@@ -543,7 +543,7 @@ namespace BlazorEmoji.Tests
         {
             // Arrange
             _mockEmojiService
-                .Setup(s => s.GetAllCategoriesAsync())
+                .Setup(s => s.GetAllCategoriesAsync(false))
                 .ReturnsAsync(new List<EmojiCategory>());
 
             _mockEmojiService
@@ -568,7 +568,7 @@ namespace BlazorEmoji.Tests
             var emoji = new Emoji { Code = "1F600", Char = "😀", Name = "Grinning Face" };
 
             _mockEmojiService
-                .Setup(s => s.GetAllCategoriesAsync())
+                .Setup(s => s.GetAllCategoriesAsync(false))
                 .ReturnsAsync(new List<EmojiCategory>());
 
             _mockEmojiService
@@ -598,7 +598,7 @@ namespace BlazorEmoji.Tests
         {
             // Arrange
             _mockEmojiService
-                .Setup(s => s.GetAllCategoriesAsync())
+                .Setup(s => s.GetAllCategoriesAsync(false))
                 .ReturnsAsync(new List<EmojiCategory>());
 
             _mockEmojiService
@@ -624,7 +624,7 @@ namespace BlazorEmoji.Tests
             };
 
             _mockEmojiService
-                .Setup(s => s.GetAllCategoriesAsync())
+                .Setup(s => s.GetAllCategoriesAsync(false))
                 .ReturnsAsync(categories);
 
             _mockEmojiService
@@ -645,7 +645,7 @@ namespace BlazorEmoji.Tests
         {
             // Arrange
             _mockEmojiService
-                .Setup(s => s.GetAllCategoriesAsync())
+                .Setup(s => s.GetAllCategoriesAsync(false))
                 .ReturnsAsync(new List<EmojiCategory>());
 
             _mockEmojiService
