@@ -70,7 +70,7 @@ Install-Package BlazorEmo
     private bool isPickerOpen = false; 
     private string selectedEmoji = "";
 
-    private void HandleEmojiSelected(BlazorEmo.Models.Emoji emoji)
+    private void HandleEmojiSelected(BlazorEmo.Models.Emo emoji)
     {
         selectedEmoji = emoji.Char;
         isPickerOpen = false;
