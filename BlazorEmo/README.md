@@ -1,6 +1,6 @@
 # BlazorEmo
 
-A fully accessible, WCAG 2.1 AAA-compliant emoji picker component for Blazor WebAssembly applications.
+A fully accessible, WCAG 2.1 AA-compliant emoji picker component for Blazor WebAssembly applications (text contrast exceeds AAA standards).
 
 ## ✨ Features
 
@@ -8,7 +8,7 @@ A fully accessible, WCAG 2.1 AAA-compliant emoji picker component for Blazor Web
 - 🎯 **1,585+ Emojis** - Complete emoji dataset with categorization
 - 🔍 **Smart Search** - Real-time emoji search with instant results
 - 📱 **Responsive Design** - Works seamlessly on desktop, tablet, and mobile
-- ♿ **WCAG 2.1 AAA Compliant** - Industry-leading accessibility
+- ♿ **WCAG 2.1 AA Compliant** - Exceeds AAA standards for text contrast
 
 ### Keyboard Navigation
 - **Tab/Shift+Tab** - Navigate between search, categories, and emojis
@@ -23,7 +23,7 @@ A fully accessible, WCAG 2.1 AAA-compliant emoji picker component for Blazor Web
 - **Recent Emojis** - Tracks recently used emojis
 - **Dark Mode** - Automatic system preference detection
 - **Smooth Animations** - Respects `prefers-reduced-motion`
-- **Touch-Friendly** - 48×48px minimum touch targets (AAA)
+- **Touch-Friendly** - 48×48px minimum touch targets (exceeds AAA 44×44px requirement)
 
 ### Event Callbacks
 - **OnOpened** - Triggered when picker opens (analytics, initialization)
@@ -35,7 +35,9 @@ A fully accessible, WCAG 2.1 AAA-compliant emoji picker component for Blazor Web
 - **OnError** - Triggered on JS interop or other errors
 
 ### Accessibility
-- ✅ WCAG 2.1 Level A, AA, AAA compliant
+- ✅ WCAG 2.1 Level A compliant
+- ✅ WCAG 2.1 Level AA compliant
+- ✅ WCAG 2.1 Level AAA (Text Contrast only)
 - ✅ ARIA 1.2 dialog, tablist, and grid patterns
 - ✅ Screen reader announcements
 - ✅ High contrast mode support
@@ -84,7 +86,7 @@ Install-Package BlazorEmo
 | Parameter | Type | Default | Required | Description |
 |-----------|------|---------|----------|-------------|
 | `IsOpen` | `bool` | `false` | No | Controls picker visibility |
-| `OnEmojiSelected` | `EventCallback<Emoji>` | - | **Yes** | Invoked when emoji is selected |
+| `OnEmojiSelected` | `EventCallback<Emo>` | - | **Yes** | Invoked when emoji is selected |
 | `OnClose` | `EventCallback` | - | No | Invoked when picker is closed |
 | `UseCompleteDataset` | `bool` | `false` | No | Use full 1,585 emoji dataset (true) or basic 60 emojis (false) |
 | `OnOpened` | `EventCallback` | - | No | Invoked when picker opens |
@@ -93,7 +95,7 @@ Install-Package BlazorEmo
 | `OnBeforeClose` | `Func<Task<bool>>?` | - | No | Async callback to prevent closing |
 | `OnError` | `EventCallback<Exception>` | - | No | Invoked when errors occur |
 
-### Emoji Model
+### Emo Model
 
 ```
 public class Emoji 
@@ -108,9 +110,7 @@ public class Emoji
 ```
 
 ## 🔔 Event Callbacks Examples
-
-### Analytics Tracking
-
+ 
 ```
 <EmoPicker OnOpened="@(() => Analytics.Track("EmoPickerOpened"))" 
              OnCategoryChanged="@(cat => Analytics.Track("CategoryChanged", cat))" 
@@ -132,7 +132,7 @@ public class Emoji
 }
 
 ```
- 
+
 
 ## 🎨 Customization
 
@@ -176,9 +176,11 @@ Automatically detects `prefers-color-scheme: dark`. No configuration needed.
 Tested against:
 - WCAG 2.1 Level A ✅
 - WCAG 2.1 Level AA ✅
-- WCAG 2.1 Level AAA ✅
+- WCAG 2.1 Level AAA (Text Contrast) ✅
 - ARIA 1.2 Authoring Practices ✅
 - Section 508 ✅
+
+**Note:** While fully AA compliant, text contrast ratios exceed AAA standards (7:1+).
 
 ## 📝 License
 
@@ -186,10 +188,9 @@ MIT License - see [LICENSE](LICENSE) for details
 
 ## 🤝 Contributing
 
-Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+Contributions welcome! Please open an issue or submit a pull request via Azure DevOps.
 
 ## 📞 Support
 
-- 📧 Email: support@example.com
-- 🐛 Issues: [GitHub Issues](https://github.com/yourorg/BlazorEmo/issues)
-- 💬 Discussions: [GitHub Discussions](https://github.com/yourorg/BlazorEmo/discussions)
+- 🐛 Issues: [Azure DevOps Work Items](https://dev.azure.com/LoneWorxLLC/LoneWorx/_workitems)
+- 💻 Repository: [Azure DevOps](https://dev.azure.com/LoneWorxLLC/LoneWorx/_git/BlazorEmo.Solution)

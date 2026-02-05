@@ -14,7 +14,7 @@
 	  <Authors>simscon1</Authors>
 	  <Company>LoneWorx LLC</Company>
 	  <Product>BlazorEmo</Product>
-	  <Description>A modern, fully accessible emoji picker component for Blazor WebAssembly and Server applications. Features include live search, category organization, recent emoji tracking, WCAG 2.1 AA compliance, full keyboard navigation, screen reader support, and dark mode.</Description>
+	  <Description>A modern, fully accessible emoji picker component for Blazor WebAssembly and Server applications. Features include live search, category organization, recent emoji tracking, WCAG 2.1 AA compliance (approaching AAA), full keyboard navigation, screen reader support, and dark mode.</Description>
 	  <Copyright>Copyright © 2026 LoneWorx LLC</Copyright>
 	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
@@ -32,13 +32,13 @@
 
 	  <!-- Release Notes -->
 	  <PackageReleaseNotes>
-		  Initial release of BlazorEmo v1.0.0
-		  - Full emoji picker with search and categories
-		  - WCAG 2.1 Level AA compliant
-		  - Keyboard navigation and screen reader support
-		  - Dark mode with proper contrast ratios
-		  - LocalStorage-based recent emoji tracking
-		  - Blazor WebAssembly and Server support
+	    Initial release of BlazorEmo v1.0.0
+	    - Full emoji picker with search and categories
+	    - WCAG 2.1 Level AA compliant (text contrast exceeds AAA standards)
+	    - Keyboard navigation and screen reader support
+	    - Dark mode with enhanced contrast ratios (7:1+)
+	    - LocalStorage-based recent emoji tracking
+	    - Blazor WebAssembly and Server support
 	  </PackageReleaseNotes>
 	  
   </PropertyGroup>
