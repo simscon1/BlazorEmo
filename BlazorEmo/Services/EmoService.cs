@@ -5,6 +5,11 @@ namespace BlazorEmo.Services;
 
 public class EmoService : IEmoService
 {
+    // Static cache shared across all instances
+    private static List<EmoCategory>? _cachedBasicCategories;
+    private static List<EmoCategory>? _cachedCompleteCategories;
+    private static readonly SemaphoreSlim _cacheLock = new(1, 1);
+
     private List<EmoCategory>? _categories;
     private readonly HttpClient _httpClient;
     private readonly IRecentEmoService _recentEmoService;
@@ -20,14 +25,28 @@ public class EmoService : IEmoService
     {
         _useCompleteDataset = useCompleteDataset;
 
-        // ✅ FIXED: Match the actual file names (lowercase e, underscores)
-        string dataset = useCompleteDataset 
-            ? "emojis_complete.json"  // Changed from Emojis.Complete.json
-            : "emojis_basic.json";     // Changed from Emojis.Basic.json
-
-        if (_categories == null)
+        // Check static cache first
+        var cachedData = useCompleteDataset ? _cachedCompleteCategories : _cachedBasicCategories;
+        if (cachedData != null)
         {
-            // Try RCL path first, fallback to local path
+            return cachedData;
+        }
+
+        // Use lock to prevent multiple simultaneous loads
+        await _cacheLock.WaitAsync();
+        try
+        {
+            // Double-check after acquiring lock
+            cachedData = useCompleteDataset ? _cachedCompleteCategories : _cachedBasicCategories;
+            if (cachedData != null)
+            {
+                return cachedData;
+            }
+
+            string dataset = useCompleteDataset 
+                ? "emojis_complete.json"
+                : "emojis_basic.json";
+
             string[] possiblePaths = 
             [
                 $"_content/BlazorEmo/data/{dataset}",
@@ -57,9 +76,26 @@ public class EmoService : IEmoService
             { 
                 PropertyNameCaseInsensitive = true 
             });
-            _categories = data?.Categories ?? new List<EmoCategory>();
+            
+            var categories = data?.Categories ?? new List<EmoCategory>();
+
+            // Cache the result
+            if (useCompleteDataset)
+            {
+                _cachedCompleteCategories = categories;
+            }
+            else
+            {
+                _cachedBasicCategories = categories;
+            }
+
+            _categories = categories;
+            return categories;
         }
-        return _categories;
+        finally
+        {
+            _cacheLock.Release();
+        }
     }
 
     public async Task<List<EmoCategory>> SearchAsync(string query)
@@ -100,6 +136,11 @@ public class EmoService : IEmoService
     public Task AddRecentAsync(Models.Emo emoji)
     {
         return _recentEmoService.AddRecentAsync(emoji);
+    }
+
+    public Task ClearRecentAsync()
+    {
+        return _recentEmoService.ClearRecentAsync();
     }
 
     private class EmojiData

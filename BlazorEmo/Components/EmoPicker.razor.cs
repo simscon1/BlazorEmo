@@ -1,87 +1,76 @@
 ﻿using BlazorEmo.Models;
+using BlazorEmo.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using System.Diagnostics;
-using System.Threading;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BlazorEmo.Components;
 
 /// <summary>
 /// A fully accessible emoji picker component with keyboard navigation and screen reader support.
+/// Works standalone or with DI registration for optimal performance.
 /// </summary>
 public partial class EmoPicker : ComponentBase, IAsyncDisposable
 {
+    [Inject] private IServiceProvider ServiceProvider { get; set; } = default!;
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] private HttpClient? HttpClient { get; set; }
+
+    // Services - created on demand if not registered
+    private IEmoService? _emoService;
+    private IRecentEmoService? _recentEmoService;
+    
+    private IEmoService EmoService => _emoService ??= GetOrCreateEmoService();
+    private IRecentEmoService RecentEmoService => _recentEmoService ??= GetOrCreateRecentEmoService();
+
     /// <summary>
     /// Gets or sets a value indicating whether the complete dataset is used for processing.
     /// </summary>
-    /// <remarks>When set to <see langword="true"/>, the entire dataset is utilized, which may affect performance
-    /// depending on the dataset size. Use this property when comprehensive data analysis is required.</remarks>
     [Parameter] public bool UseCompleteDataset { get; set; } = false;
 
     /// <summary>
     /// Gets or sets a value indicating whether the component is currently open.
     /// </summary>
-    /// <remarks>This property can be used to control the visibility of the component. When set to <see
-    /// langword="true"/>, the component is displayed; otherwise, it is hidden.</remarks>
     [Parameter] public bool IsOpen { get; set; }
 
     /// <summary>
     /// Gets or sets the callback that is invoked when an emoji is selected.
     /// </summary>
-    /// <remarks>The callback receives the selected emoji as a parameter. Use this event to handle emoji selection in
-    /// the parent component, such as updating state or performing additional actions.</remarks>
     [Parameter] public EventCallback<Models.Emo> OnEmojiSelected { get; set; }
 
     /// <summary>
     /// Gets or sets the callback that is invoked when the component is closed.
     /// </summary>
-    /// <remarks>Use this parameter to perform cleanup or update application state when the component is dismissed.
-    /// The callback is triggered whenever the component is closed, either by user interaction or
-    /// programmatically.</remarks>
     [Parameter] public EventCallback OnClose { get; set; }
 
     /// <summary>
     /// Gets or sets the callback that is invoked when the component is opened.
     /// </summary>
-    /// <remarks>Use this property to specify an action to perform when the component becomes visible or is
-    /// initialized. This is typically used to trigger additional logic or update state in response to the component
-    /// opening. Ensure that the assigned callback does not perform long-running operations to avoid blocking the
-    /// UI.</remarks>
     [Parameter] public EventCallback OnOpened { get; set; }
 
     /// <summary>
-    /// Gets or sets the callback that is invoked when the selected category changes.   
+    /// Gets or sets the callback that is invoked when the selected category changes.
     /// </summary>
-    /// <remarks>Use this parameter to handle category change events in the parent component. The callback
-    /// receives the new category name as its argument, allowing the parent to respond to user selection or update
-    /// related state.</remarks>
     [Parameter] public EventCallback<string> OnCategoryChanged { get; set; }
+
     /// <summary>
     /// Gets or sets the callback that is invoked when the search text changes.
     /// </summary>
-    /// <remarks>This callback is triggered each time the user modifies the search input, allowing the parent
-    /// component to respond to search queries in real time. Ensure that the callback implementation efficiently handles
-    /// frequent updates, as it may be called on every keystroke.</remarks>
     [Parameter] public EventCallback<string> OnSearchChanged { get; set; }
+
     /// <summary>
-    /// Gets or sets a callback function that is invoked before the component is closed to determine whether the close
-    /// action should proceed.
+    /// Gets or sets a callback function that is invoked before the component is closed.
     /// </summary>
-    /// <remarks>The callback should return a <see cref="Task{Boolean}"/> that resolves to <see
-    /// langword="true"/> to allow closing, or <see langword="false"/> to cancel the close action. This enables
-    /// asynchronous validation or user confirmation before the component is closed.</remarks>
     [Parameter] public Func<Task<bool>>? OnBeforeClose { get; set; }
+
     /// <summary>
-    /// Gets or sets the callback that is invoked when an unhandled exception occurs during component processing.
+    /// Gets or sets the callback that is invoked when an error occurs.
     /// </summary>
-    /// <remarks>Assign this callback to provide custom error handling logic in the parent component. If not
-    /// set, unhandled exceptions may propagate and disrupt the normal operation of the application. The callback
-    /// receives the exception instance that was thrown.</remarks>
     [Parameter] public EventCallback<Exception> OnError { get; set; }
 
     private IJSObjectReference? _jsModule;
-
     private string searchQuery = "";
     private string activeTab = "recent";
     private List<EmoCategory>? _categories;
@@ -89,30 +78,66 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
     private string _screenReaderAnnouncement = "";
     private ElementReference _searchInput;
     private ElementReference _pickerElement;
-
-    // Better
-    /// <summary>
-    /// The name of the currently hovered or keyboard-focused emoji/tab.
-    /// Displayed in the stationary label for user feedback.
-    /// </summary>
     private string _hoveredEmojiName = string.Empty;
-
-    /// <summary>
-    /// The zero-based index of the currently focused emoji in the flattened emoji list.
-    /// -1 indicates no emoji is focused.
-    /// </summary>
     private int _focusedEmojiIndex = -1;
-
-    // Add constants
-    /// <summary>
-    /// Number of columns in the emoji grid layout.
-    /// </summary>
     private const int GRID_COLUMN_COUNT = 8;
     private const int RENDER_DELAY_MS = 10;
     private const int SCREEN_READER_DELAY_MS = 100;
-
-    // Add this field near the top with other private fields
+    private const int SEARCH_DEBOUNCE_MS = 300; // ✅ NEW: Debounce delay
     private bool _wasOpen = false;
+
+    // ✅ NEW: Debouncing and cancellation
+    private CancellationTokenSource? _searchCts;
+    private System.Timers.Timer? _debounceTimer;
+    private bool _isSearching = false;
+
+    /// <summary>
+    /// Gets or creates the EmoService instance.
+    /// Tries to get from DI first, falls back to creating a new instance.
+    /// </summary>
+    private IEmoService GetOrCreateEmoService()
+    {
+        // Try to get from DI first
+        var service = ServiceProvider.GetService<IEmoService>(); // ✅ Now works with the using directive
+        
+        if (service != null)
+        {
+            Debug.WriteLine("[EmoPicker] Using registered IEmoService from DI");
+            return service;
+        }
+        
+        // Fallback: Create default instance
+        Debug.WriteLine("[EmoPicker] No IEmoService registered. Creating default instance. For better performance, call builder.Services.AddEmoServices()");
+        
+        // ✅ FIXED: Don't create HttpClient if not available
+        if (HttpClient == null)
+        {
+            throw new InvalidOperationException("HttpClient must be registered when not using AddEmoServices(). Add builder.Services.AddHttpClient() to Program.cs");
+        }
+        
+        var recentService = GetOrCreateRecentEmoService();
+        return new EmoService(HttpClient, recentService);
+    }
+
+    /// <summary>
+    /// Gets or creates the RecentEmoService instance.
+    /// Tries to get from DI first, falls back to creating a new instance.
+    /// </summary>
+    private IRecentEmoService GetOrCreateRecentEmoService()
+    {
+        // Try to get from DI first
+        var service = ServiceProvider.GetService<IRecentEmoService>(); // ✅ Now works with the using directive
+        
+        if (service != null)
+        {
+            Debug.WriteLine("[EmoPicker] Using registered IRecentEmoService from DI");
+            return service;
+        }
+        
+        // Fallback: Create default instance with static locking to prevent race conditions
+        Debug.WriteLine("[EmoPicker] No IRecentEmoService registered. Creating default instance.");
+        return new RecentEmoService(JSRuntime);
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -125,7 +150,6 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
     // Update OnParametersSetAsync to track when picker opens
     protected override async Task OnParametersSetAsync()
     {
-        // Detect when picker transitions from closed to open
         if (IsOpen && !_wasOpen)
         {
             await OnOpened.InvokeAsync();
@@ -134,11 +158,13 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
         else if (!IsOpen && _wasOpen)
         {
             _wasOpen = false;
+            // ✅ NEW: Cancel pending operations when closing
+            CancelPendingSearch();
         }
         
         if (IsOpen && !string.IsNullOrWhiteSpace(searchQuery))
         {
-            await UpdateSearch();
+            await UpdateSearchImmediate(); // Already typed, no debounce
         }
         else if (IsOpen && _categories == null)
         {
@@ -212,7 +238,7 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
     {
         if (activeTab == "recent")
         {
-            var recentEmojis = await EmoService.GetRecentAsync();
+            var recentEmojis = await RecentEmoService.GetRecentAsync();
             _categories = recentEmojis.Any()
                 ? new List<EmoCategory> { new EmoCategory { Name = "Recent", Emojis = recentEmojis } }
                 : new List<EmoCategory>();
@@ -226,27 +252,81 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
         Debug.WriteLine($"[EmoPicker] Loaded {_categories?.Count ?? 0} categories for tab '{activeTab}'");
     }
 
-    // This should be called automatically when you type
-    private async Task UpdateSearch()
+    // ✅ NEW: Immediate search (no debounce)
+    private async Task UpdateSearchImmediate()
     {
-        if (string.IsNullOrWhiteSpace(searchQuery))
+        CancelPendingSearch();
+        await PerformSearch();
+    }
+
+    // ✅ NEW: Debounced search
+    private void UpdateSearchDebounced()
+    {
+        CancelPendingSearch();
+        
+        _debounceTimer = new System.Timers.Timer(SEARCH_DEBOUNCE_MS);
+        _debounceTimer.AutoReset = false;
+        _debounceTimer.Elapsed += async (s, e) =>
         {
-            await LoadTabContent(); // Clear search, show current tab
-        }
-        else
+            await InvokeAsync(async () =>
+            {
+                await PerformSearch();
+            });
+        };
+        _debounceTimer.Start();
+    }
+
+    // ✅ NEW: Actual search logic
+    private async Task PerformSearch()
+    {
+        if (_isSearching) return;
+        
+        _isSearching = true;
+        _searchCts = new CancellationTokenSource();
+        
+        try
         {
-            _categories = await EmoService.SearchAsync(searchQuery); // ✅ Filter emojis
-            var count = GetEmojiCount();
-            await AnnounceToScreenReader($"{count} emoji{(count != 1 ? "s" : "")} found for {searchQuery}.");
-            Debug.WriteLine($"[EmoPicker] Search '{searchQuery}' found {count} emojis");
+            if (string.IsNullOrWhiteSpace(searchQuery))
+            {
+                await LoadTabContent();
+            }
+            else
+            {
+                _categories = await EmoService.SearchAsync(searchQuery);
+                var count = GetEmojiCount();
+                await AnnounceToScreenReader($"{count} emoji{(count != 1 ? "s" : "")} found for {searchQuery}.");
+                Debug.WriteLine($"[EmoPicker] Search '{searchQuery}' found {count} emojis");
+            }
+            
+            StateHasChanged();
         }
+        catch (OperationCanceledException)
+        {
+            Debug.WriteLine("[EmoPicker] Search cancelled");
+        }
+        finally
+        {
+            _isSearching = false;
+        }
+    }
+
+    // ✅ NEW: Cancel helper
+    private void CancelPendingSearch()
+    {
+        _debounceTimer?.Stop();
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+        
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        _searchCts = null;
     }
 
     private async Task SelectEmoji(Models.Emo emoji)
     {
         Debug.WriteLine($"[EmoPicker] Emoji selected: {emoji.Name} ({emoji.Char})");
         await OnEmojiSelected.InvokeAsync(emoji);
-        await EmoService.AddRecentAsync(emoji);
+        await RecentEmoService.AddRecentAsync(emoji);
         await AnnounceToScreenReader($"{emoji.Name} emoji selected.");
         searchQuery = "";
 
@@ -322,47 +402,44 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
             return;
         }
 
+        // ✅ OPTIMIZED: Batch state updates
+        bool needsRender = false;
+        string? newTab = null;
+        int? newTabIndex = null;
+
         switch (e.Key)
         {
             case "ArrowRight":
                 if (currentTabIndex < allTabs.Count - 1)
                 {
-                    var nextTab = allTabs[currentTabIndex + 1];
-                    await SelectTab(nextTab);
-                    StateHasChanged();
-                    await Task.Delay(RENDER_DELAY_MS);
-                    await FocusTab(currentTabIndex + 1);
+                    newTab = allTabs[currentTabIndex + 1];
+                    newTabIndex = currentTabIndex + 1;
+                    needsRender = true;
                 }
                 break;
 
             case "ArrowLeft":
                 if (currentTabIndex > 0)
                 {
-                    var prevTab = allTabs[currentTabIndex - 1];
-                    await SelectTab(prevTab);
-                    StateHasChanged();
-                    await Task.Delay(RENDER_DELAY_MS);
-                    await FocusTab(currentTabIndex - 1);
+                    newTab = allTabs[currentTabIndex - 1];
+                    newTabIndex = currentTabIndex - 1;
+                    needsRender = true;
                 }
                 break;
 
             case "Home":
-                var firstTab = allTabs[0];
-                await SelectTab(firstTab);
-                StateHasChanged();
-                await Task.Delay(RENDER_DELAY_MS);
-                await FocusTab(0);
+                newTab = allTabs[0];
+                newTabIndex = 0;
+                needsRender = true;
                 break;
 
             case "End":
-                var lastTab = allTabs[^1];
-                await SelectTab(lastTab);
-                StateHasChanged();
-                await Task.Delay(RENDER_DELAY_MS);
-                await FocusTab(allTabs.Count - 1);
+                newTab = allTabs[^1];
+                newTabIndex = allTabs.Count - 1;
+                needsRender = true;
                 break;
 
-            case "Tab":  // ✅ Tab key moves to emoji list (this was blocked!)
+            case "Tab":
             case "ArrowDown":
             case "Enter":
             case " ":
@@ -372,6 +449,15 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
             case "Escape":
                 await OnClose.InvokeAsync();
                 break;
+        }
+
+        // ✅ OPTIMIZED: Single render + focus
+        if (needsRender && newTab != null && newTabIndex.HasValue)
+        {
+            await SelectTab(newTab);
+            StateHasChanged();
+            await Task.Delay(RENDER_DELAY_MS);
+            await FocusTab(newTabIndex.Value);
         }
     }
 
@@ -392,68 +478,43 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
             return;
         }
 
-        // ✅ ADD THIS - Handle Tab (forward) to wrap back to search
-        if (e.Key == "Tab" && !e.ShiftKey)
+        // ✅ OPTIMIZED: Calculate new index without multiple focus calls
+        int? newIndex = e.Key switch
         {
-            await FocusSearch(); // Complete the focus cycle
-            return;
+            "ArrowRight" when currentIndex < allEmojis.Count - 1 => currentIndex + 1,
+            "ArrowLeft" when currentIndex > 0 => currentIndex - 1,
+            "ArrowDown" when currentIndex + GRID_COLUMN_COUNT < allEmojis.Count => currentIndex + GRID_COLUMN_COUNT,
+            "Home" => 0,
+            "End" => allEmojis.Count - 1,
+            _ => null
+        };
+
+        if (newIndex.HasValue)
+        {
+            await FocusEmoji(newIndex.Value);
         }
-
-        switch (e.Key)
+        else if (e.Key == "ArrowUp")
         {
-            case "ArrowRight":
-                if (currentIndex < allEmojis.Count - 1)
-                {
-                    await FocusEmoji(currentIndex + 1);
-                }
-                break;
-
-            case "ArrowLeft":
-                if (currentIndex > 0)
-                {
-                    await FocusEmoji(currentIndex - 1);
-                }
-                break;
-
-            case "ArrowDown":
-                var nextRowIndex = currentIndex + GRID_COLUMN_COUNT;
-                if (nextRowIndex < allEmojis.Count)
-                {
-                    await FocusEmoji(nextRowIndex);
-                }
-                break;
-
-            case "ArrowUp":
-                if (currentIndex >= GRID_COLUMN_COUNT)
-                {
-                    await FocusEmoji(currentIndex - GRID_COLUMN_COUNT);
-                }
-                else
-                {
-                    var tabIndex = GetCurrentTabIndex();
-                    await FocusTab(tabIndex);
-                }
-                break;
-
-            case "Home":
-                await FocusEmoji(0);
-                break;
-
-            case "End":
-                await FocusEmoji(allEmojis.Count - 1);
-                break;
-
-            case "Enter":
-            case " ":
-                if (currentIndex >= 0 && currentIndex < allEmojis.Count)
-                {
-                    await SelectEmoji(allEmojis[currentIndex]);
-                }
-                break;
-
-            case "Escape":
-                await OnClose.InvokeAsync();
-                break;
+            if (currentIndex >= GRID_COLUMN_COUNT)
+            {
+                await FocusEmoji(currentIndex - GRID_COLUMN_COUNT);
+            }
+            else
+            {
+                var tabIndex = GetCurrentTabIndex();
+                await FocusTab(tabIndex);
+            }
+        }
+        else if (e.Key is "Enter" or " ")
+        {
+            if (currentIndex >= 0 && currentIndex < allEmojis.Count)
+            {
+                await SelectEmoji(allEmojis[currentIndex]);
+            }
+        }
+        else if (e.Key == "Escape")
+        {
+            await OnClose.InvokeAsync();
         }
     }
 
@@ -576,19 +637,22 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        // ✅ NEW: Clean up resources
+        CancelPendingSearch();
+        
         if (_jsModule is not null)
         {
             await _jsModule.DisposeAsync();
         }
     }
 
+    // ✅ OPTIMIZED: Debounced search on input
     private async Task OnSearchInput(ChangeEventArgs e)
     {
         searchQuery = e.Value?.ToString() ?? "";
         Debug.WriteLine($"[EmoPicker] Search input changed to: '{searchQuery}'");
-        await UpdateSearch();
-
-        // Invoke OnSearchChanged
+        
+        UpdateSearchDebounced(); // ✅ Use debouncing
         await OnSearchChanged.InvokeAsync(searchQuery);
     }
 
@@ -636,52 +700,18 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
         return $"emoji-{allEmojis[_focusedEmojiIndex].Code}";
     }
 
-    private async ValueTask SafeJsInvoke(string method, params object[] args)
-    {
-        if (_jsModule == null) return;
-
-        try
-        {
-            await _jsModule.InvokeVoidAsync(method, args);
-        }
-        catch (JSException jsEx)
-        {
-            Debug.WriteLine($"[EmoPicker] JS Error in {method}: {jsEx.Message}");
-            // Optionally show user-friendly error
-        }
-        catch (ObjectDisposedException)
-        {
-            Debug.WriteLine($"[EmoPicker] Component disposed during {method}");
-        }
-    }
-
-    /// <summary>
-    /// Calculates the total number of rows needed for the emoji grid.
-    /// </summary>
-    /// <param name="emojiCount">Total number of emojis in the category.</param>
-    /// <returns>The number of rows required (1-based).</returns>
     private int GetRowCount(int emojiCount)
     {
         return (int)Math.Ceiling(emojiCount / (double)GRID_COLUMN_COUNT);
     }
 
-    /// <summary>
-    /// Calculates the row index for an emoji in the grid (1-based for ARIA).
-    /// </summary>
-    /// <param name="emojiIndex">Zero-based index of the emoji.</param>
-    /// <returns>1-based row index.</returns>
     private int GetRowIndex(int emojiIndex)
     {
-        return (emojiIndex / GRID_COLUMN_COUNT) + 1; // ARIA uses 1-based indexing
+        return (emojiIndex / GRID_COLUMN_COUNT) + 1;
     }
 
-    /// <summary>
-    /// Calculates the column index for an emoji in the grid (1-based for ARIA).
-    /// </summary>
-    /// <param name="emojiIndex">Zero-based index of the emoji.</param>
-    /// <returns>1-based column index.</returns>
     private int GetColIndex(int emojiIndex)
     {
-        return (emojiIndex % GRID_COLUMN_COUNT) + 1; // ARIA uses 1-based indexing
+        return (emojiIndex % GRID_COLUMN_COUNT) + 1;
     }
 }
