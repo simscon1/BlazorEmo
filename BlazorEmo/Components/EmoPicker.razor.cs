@@ -99,6 +99,9 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
     private System.Timers.Timer? _debounceTimer;
     private bool _isSearching = false;
 
+    // Cache for loaded categories
+    private Dictionary<string, List<EmoCategory>> _categoryCache = new Dictionary<string, List<EmoCategory>>();
+
     /// <summary>
     /// Gets or creates the EmoService instance.
     /// Tries to get from DI first, falls back to creating a new instance.
@@ -149,9 +152,12 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
 
     protected override async Task OnInitializedAsync()
     {
-        // Load either Basic or Complete dataset based on parameter
+        // ✅ Load all categories for tab navigation
         _allCategories = await EmoService.GetAllCategoriesAsync(UseCompleteDataset);
+        
+        // Load "recent" tab content by default
         await LoadTabContent();
+        
         Debug.WriteLine($"[EmoPicker] Initialized with {_allCategories?.Count ?? 0} categories ({(UseCompleteDataset ? "Complete" : "Basic")} dataset)");
     }
 
@@ -231,14 +237,25 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
         activeTab = tabName;
         searchQuery = "";
         _focusedEmojiIndex = -1;
-
-        // Update the label to show tab name
         _hoveredEmojiName = FormatTabName(tabName);
 
-        await LoadTabContent();
-        await AnnounceToScreenReader($"Switched to {FormatTabName(tabName)} category. {GetEmojiCount()} emojis available. Press Tab to browse emojis.");
+        // ✅ Lazy load category on demand
+        if (tabName == "recent")
+        {
+            await LoadTabContent(); // Special handling for recent
+        }
+        else if (_categoryCache.TryGetValue(tabName, out var cached))
+        {
+            _categories = cached;
+        }
+        else
+        {
+            _categories = await EmoService.LoadCategoryAsync(tabName, UseCompleteDataset);
+            _categoryCache[tabName] = _categories;
+            _allEmojisCache = null; // Invalidate emoji cache
+        }
 
-        // Invoke OnCategoryChanged
+        await AnnounceToScreenReader($"Switched to {FormatTabName(tabName)} category. {GetEmojiCount()} emojis available. Press Tab to browse emojis.");
         await OnCategoryChanged.InvokeAsync(tabName);
     }
 

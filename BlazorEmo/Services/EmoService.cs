@@ -98,6 +98,20 @@ public class EmoService : IEmoService
         }
     }
 
+    /// <summary>
+    /// Loads a specific category by name (lazy loading optimization).
+    /// </summary>
+    public async Task<List<EmoCategory>> LoadCategoryAsync(string categoryName, bool useCompleteDataset)
+    {
+        // Load all categories first (they're cached)
+        var allCategories = await GetAllCategoriesAsync(useCompleteDataset);
+        
+        // Return only the requested category
+        return allCategories
+            .Where(c => c.Name.Equals(categoryName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
     public async Task<List<EmoCategory>> SearchAsync(string query)
     {
         var allCategories = await GetAllCategoriesAsync(_useCompleteDataset);
@@ -128,12 +142,12 @@ public class EmoService : IEmoService
         return filtered;
     }
 
-    public Task<List<Models.Emo>> GetRecentAsync()
+    public Task<List<Emo>> GetRecentAsync()
     {
         return _recentEmoService.GetRecentAsync();
     }
 
-    public Task AddRecentAsync(Models.Emo emoji)
+    public Task AddRecentAsync(Emo emoji)
     {
         return _recentEmoService.AddRecentAsync(emoji);
     }
