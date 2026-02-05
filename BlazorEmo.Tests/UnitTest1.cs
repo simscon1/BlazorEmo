@@ -489,7 +489,8 @@ namespace BlazorEmo.Tests
 
             // Act
             var cut = Render<EmoPicker>(parameters => parameters
-                .Add(p => p.IsOpen, false));
+                .Add(p => p.IsOpen, false)
+                .Add(p => p.OnEmojiSelected, _ => { }));
 
             // Assert
             Assert.DoesNotContain("emoji-picker-backdrop", cut.Markup);
@@ -509,7 +510,8 @@ namespace BlazorEmo.Tests
 
             // Act
             var cut = Render<EmoPicker>(parameters => parameters
-                .Add(p => p.IsOpen, true));
+                .Add(p => p.IsOpen, true)
+                .Add(p => p.OnEmojiSelected, _ => { }));
 
             // Assert
             Assert.Contains("emoji-picker-backdrop", cut.Markup);
@@ -530,7 +532,8 @@ namespace BlazorEmo.Tests
 
             // Act
             var cut = Render<EmoPicker>(parameters => parameters
-                .Add(p => p.IsOpen, true));
+                .Add(p => p.IsOpen, true)
+                .Add(p => p.OnEmojiSelected, _ => { }));
 
             // Assert
             var searchInput = cut.Find("#emoji-search");
@@ -552,7 +555,8 @@ namespace BlazorEmo.Tests
 
             // Act
             var cut = Render<EmoPicker>(parameters => parameters
-                .Add(p => p.IsOpen, true));
+                .Add(p => p.IsOpen, true)
+                .Add(p => p.OnEmojiSelected, _ => { }));
 
             // Assert
             var recentTab = cut.Find("[data-tab-name='recent']");
@@ -607,7 +611,8 @@ namespace BlazorEmo.Tests
 
             // Act
             var cut = Render<EmoPicker>(parameters => parameters
-                .Add(p => p.IsOpen, true));
+                .Add(p => p.IsOpen, true)
+                .Add(p => p.OnEmojiSelected, _ => { }));
 
             // Assert
             Assert.Contains("No recent emojis yet", cut.Markup);
@@ -633,7 +638,8 @@ namespace BlazorEmo.Tests
 
             // Act
             var cut = Render<EmoPicker>(parameters => parameters
-                .Add(p => p.IsOpen, true));
+                .Add(p => p.IsOpen, true)
+                .Add(p => p.OnEmojiSelected, _ => { }));
 
             // Assert
             Assert.Contains("Smileys & Emotion", cut.Find("[data-tab-name='Smileys & Emotion']").GetAttribute("title"));
@@ -654,7 +660,8 @@ namespace BlazorEmo.Tests
 
             // Act
             var cut = Render<EmoPicker>(parameters => parameters
-                .Add(p => p.IsOpen, true));
+                .Add(p => p.IsOpen, true)
+                .Add(p => p.OnEmojiSelected, _ => { }));
 
             // Assert
             var dialog = cut.Find(".emoji-picker");
