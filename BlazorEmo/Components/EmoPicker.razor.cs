@@ -70,6 +70,12 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
     /// </summary>
     [Parameter] public EventCallback<Exception> OnError { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether virtualization is used for emoji rendering.
+    /// Defaults to true for optimal performance with large datasets.
+    /// </summary>
+    [Parameter] public bool UseVirtualization { get; set; } = true;
+
     private IJSObjectReference? _jsModule;
     private string searchQuery = "";
     private string activeTab = "recent";
@@ -85,6 +91,8 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
     private const int SCREEN_READER_DELAY_MS = 100;
     private const int SEARCH_DEBOUNCE_MS = 300; // ✅ NEW: Debounce delay
     private bool _wasOpen = false;
+    private ElementReference _scrollContainer;
+    private List<Models.Emo>? _allEmojisCache;
 
     // ✅ NEW: Debouncing and cancellation
     private CancellationTokenSource? _searchCts;
@@ -249,6 +257,10 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
                 .Where(c => c.Name == activeTab)
                 .ToList() ?? new List<EmoCategory>();
         }
+        
+        // ✅ ADD THIS LINE
+        _allEmojisCache = null;
+        
         Debug.WriteLine($"[EmoPicker] Loaded {_categories?.Count ?? 0} categories for tab '{activeTab}'");
     }
 
@@ -293,6 +305,10 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
             else
             {
                 _categories = await EmoService.SearchAsync(searchQuery);
+                
+                // ✅ ADD THIS LINE
+                _allEmojisCache = null;
+                
                 var count = GetEmojiCount();
                 await AnnounceToScreenReader($"{count} emoji{(count != 1 ? "s" : "")} found for {searchQuery}.");
                 Debug.WriteLine($"[EmoPicker] Search '{searchQuery}' found {count} emojis");
@@ -475,6 +491,13 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
         {
             var tabIndex = GetCurrentTabIndex();
             await FocusTab(tabIndex);
+            return;
+        }
+
+        // ✅ FIX: Handle Tab (forward) to return to search
+        if (e.Key == "Tab" && !e.ShiftKey)
+        {
+            await FocusSearch();
             return;
         }
 
@@ -713,5 +736,32 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
     private int GetColIndex(int emojiIndex)
     {
         return (emojiIndex % GRID_COLUMN_COUNT) + 1;
+    }
+
+    /// <summary>
+    /// Gets all emojis from current categories with caching for performance.
+    /// </summary>
+    private List<Models.Emo> GetAllEmojis()
+    {
+        if (_allEmojisCache != null)
+        {
+            return _allEmojisCache;
+        }
+
+        _allEmojisCache = _categories?.SelectMany(c => c.Emojis).ToList() ?? new List<Models.Emo>();
+        return _allEmojisCache;
+    }
+
+    /// <summary>
+    /// Splits emojis into rows of 8 for virtualized rendering.
+    /// </summary>
+    private List<List<Models.Emo>> GetEmojiRows(List<Models.Emo> emojis)
+    {
+        var rows = new List<List<Models.Emo>>();
+        for (int i = 0; i < emojis.Count; i += GRID_COLUMN_COUNT)
+        {
+            rows.Add(emojis.Skip(i).Take(GRID_COLUMN_COUNT).ToList());
+        }
+        return rows;
     }
 }
