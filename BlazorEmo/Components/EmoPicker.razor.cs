@@ -4,26 +4,20 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using System.Diagnostics;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace BlazorEmo.Components;
 
 /// <summary>
 /// A fully accessible emoji picker component with keyboard navigation and screen reader support.
-/// Works standalone or with DI registration for optimal performance.
+/// Works standalone - NO service registration required!
 /// </summary>
 public partial class EmoPicker : ComponentBase, IAsyncDisposable
 {
-    [Inject] private IServiceProvider ServiceProvider { get; set; } = default!;
-    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
-    [Inject] private HttpClient? HttpClient { get; set; }
+    [Inject] private IJSRuntime JS { get; set; } = default!;
 
-    // Services - created on demand if not registered
-    private IEmoService? _emoService;
-    private IRecentEmoService? _recentEmoService;
-    
-    private IEmoService EmoService => _emoService ??= GetOrCreateEmoService();
-    private IRecentEmoService RecentEmoService => _recentEmoService ??= GetOrCreateRecentEmoService();
+    // ✅ Simple providers - no DI, no HttpClient, no complexity!
+    private readonly EmojiProvider _emojiProvider = new();
+    private RecentEmoService? _recentService;
 
     /// <summary>
     /// Gets or sets a value indicating whether the complete dataset is used for processing.
@@ -89,76 +83,32 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
     private const int GRID_COLUMN_COUNT = 8;
     private const int RENDER_DELAY_MS = 10;
     private const int SCREEN_READER_DELAY_MS = 100;
-    private const int SEARCH_DEBOUNCE_MS = 300; // ✅ NEW: Debounce delay
+    private const int SEARCH_DEBOUNCE_MS = 300;
     private bool _wasOpen = false;
     private ElementReference _scrollContainer;
     private List<Models.Emo>? _allEmojisCache;
 
-    // ✅ NEW: Debouncing and cancellation
     private CancellationTokenSource? _searchCts;
     private System.Timers.Timer? _debounceTimer;
     private bool _isSearching = false;
 
-    // Cache for loaded categories
     private Dictionary<string, List<EmoCategory>> _categoryCache = new Dictionary<string, List<EmoCategory>>();
-
-    /// <summary>
-    /// Gets or creates the EmoService instance.
-    /// Tries to get from DI first, falls back to creating a new instance.
-    /// </summary>
-    private IEmoService GetOrCreateEmoService()
-    {
-        // Try to get from DI first
-        var service = ServiceProvider.GetService<IEmoService>(); // ✅ Now works with the using directive
-        
-        if (service != null)
-        {
-            Debug.WriteLine("[EmoPicker] Using registered IEmoService from DI");
-            return service;
-        }
-        
-        // Fallback: Create default instance
-        Debug.WriteLine("[EmoPicker] No IEmoService registered. Creating default instance. For better performance, call builder.Services.AddEmoServices()");
-        
-        // ✅ FIXED: Don't create HttpClient if not available
-        if (HttpClient == null)
-        {
-            throw new InvalidOperationException("HttpClient must be registered when not using AddEmoServices(). Add builder.Services.AddHttpClient() to Program.cs");
-        }
-        
-        var recentService = GetOrCreateRecentEmoService();
-        return new EmoService(HttpClient, recentService);
-    }
-
-    /// <summary>
-    /// Gets or creates the RecentEmoService instance.
-    /// Tries to get from DI first, falls back to creating a new instance.
-    /// </summary>
-    private IRecentEmoService GetOrCreateRecentEmoService()
-    {
-        // Try to get from DI first
-        var service = ServiceProvider.GetService<IRecentEmoService>(); // ✅ Now works with the using directive
-        
-        if (service != null)
-        {
-            Debug.WriteLine("[EmoPicker] Using registered IRecentEmoService from DI");
-            return service;
-        }
-        
-        // Fallback: Create default instance with static locking to prevent race conditions
-        Debug.WriteLine("[EmoPicker] No IRecentEmoService registered. Creating default instance.");
-        return new RecentEmoService(JSRuntime);
-    }
 
     protected override async Task OnInitializedAsync()
     {
-        // ✅ Load all categories for tab navigation
-        _allCategories = await EmoService.GetAllCategoriesAsync(UseCompleteDataset);
+        // Initialize RecentEmoService (only needs IJSRuntime)
+        _recentService = new RecentEmoService(JS);
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        // Use EmojiProvider - no HTTP calls, no services!
+        _allCategories = await _emojiProvider.GetAllCategoriesAsync();
         
-        // Load "recent" tab content by default
         await LoadTabContent();
         
-        Debug.WriteLine($"[EmoPicker] Initialized with {_allCategories?.Count ?? 0} categories ({(UseCompleteDataset ? "Complete" : "Basic")} dataset)");
+        Debug.WriteLine($"[EmoPicker] Initialized with {_allCategories?.Count ?? 0} categories");
     }
 
     // Update OnParametersSetAsync to track when picker opens
@@ -200,12 +150,10 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
     {
         if (IsOpen && _jsModule == null)
         {
-            var cts = new CancellationTokenSource();
             try
             {
-                _jsModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                _jsModule = await JS.InvokeAsync<IJSObjectReference>(
                     "import", 
-                    cts.Token,
                     "./_content/BlazorEmo/emoji-picker.js");
                 
                 Debug.WriteLine("[EmoPicker] JS module loaded");
@@ -217,10 +165,6 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
             {
                 Debug.WriteLine($"[EmoPicker] Module load error: {ex.Message}");
                 await OnError.InvokeAsync(ex);
-            }
-            finally
-            {
-                cts.Dispose();
             }
         }
 
@@ -250,7 +194,9 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
         }
         else
         {
-            _categories = await EmoService.LoadCategoryAsync(tabName, UseCompleteDataset);
+            // Use EmojiProvider.GetCategoryAsync
+            var category = await _emojiProvider.GetCategoryAsync(tabName);
+            _categories = category != null ? new List<EmoCategory> { category } : new List<EmoCategory>();
             _categoryCache[tabName] = _categories;
             _allEmojisCache = null; // Invalidate emoji cache
         }
@@ -261,9 +207,11 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
 
     private async Task LoadTabContent()
     {
+        if (_recentService == null) return;
+
         if (activeTab == "recent")
         {
-            var recentEmojis = await RecentEmoService.GetRecentAsync();
+            var recentEmojis = await _recentService.GetRecentAsync();
             _categories = recentEmojis.Any()
                 ? new List<EmoCategory> { new EmoCategory { Name = "Recent", Emojis = recentEmojis } }
                 : new List<EmoCategory>();
@@ -321,7 +269,11 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
             }
             else
             {
-                _categories = await EmoService.SearchAsync(searchQuery);
+                // Use EmojiProvider.SearchAsync
+                var results = await _emojiProvider.SearchAsync(searchQuery);
+                _categories = results.Any() 
+                    ? new List<EmoCategory> { new EmoCategory { Name = "Search Results", Emojis = results } }
+                    : new List<EmoCategory>();
                 
                 // ✅ ADD THIS LINE
                 _allEmojisCache = null;
@@ -359,7 +311,12 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
     {
         Debug.WriteLine($"[EmoPicker] Emoji selected: {emoji.Name} ({emoji.Char})");
         await OnEmojiSelected.InvokeAsync(emoji);
-        await RecentEmoService.AddRecentAsync(emoji);
+        
+        if (_recentService != null)
+        {
+            await _recentService.AddRecentAsync(emoji);
+        }
+        
         await AnnounceToScreenReader($"{emoji.Name} emoji selected.");
         searchQuery = "";
 

@@ -6,8 +6,8 @@ namespace BlazorEmo.Services;
 public class RecentEmoService : IRecentEmoService
 {
     private readonly IJSRuntime _jsRuntime;
-    private const int MaxRecentEmojis = 24;
-    private const string StorageKey = "blazor-emoji-recents";
+    private const int MaxRecentEmojis = 30;
+    private const string StorageKey = "blazoremo_recent";
 
     public RecentEmoService(IJSRuntime jsRuntime)
     {
