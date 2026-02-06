@@ -7,8 +7,8 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
- 
+
 // Register BlazorEmo services
-builder.Services.AddEmoServices();
+builder.Services.AddBlazorEmo();
 
 await builder.Build().RunAsync();
