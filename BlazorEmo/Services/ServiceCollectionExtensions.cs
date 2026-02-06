@@ -1,5 +1,6 @@
 using BlazorEmo.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Components;
 
 namespace BlazorEmo.Extensions;
 
@@ -7,44 +8,49 @@ public static class ServiceCollectionExtensions
 {
     /// <summary>
     /// Registers BlazorEmo services for optimal performance and state sharing.
-    /// OPTIONAL: Component works without this, but registration provides better performance.
+    /// Works in both Blazor Server and Blazor WebAssembly.
     /// </summary>
     /// <param name="services">The service collection.</param>
-    /// <param name="baseAddress">Optional base address for HTTP client. If null, uses relative paths.</param>
     /// <returns>The service collection for chaining.</returns>
-    public static IServiceCollection AddEmoServices(this IServiceCollection services, string? baseAddress = null)
+    public static IServiceCollection AddBlazorEmo(this IServiceCollection services)
     {
-        // Register HttpClient if not already registered (for Blazor Server compatibility)
-        if (!services.Any(x => x.ServiceType == typeof(HttpClient)))
-        {
-            services.AddScoped<HttpClient>(sp =>
-            {
-                if (!string.IsNullOrEmpty(baseAddress))
-                {
-                    return new HttpClient { BaseAddress = new Uri(baseAddress) };
-                }
-                
-                // For Blazor Server, use NavigationManager to get base URI
-                var navigationManager = sp.GetService<Microsoft.AspNetCore.Components.NavigationManager>();
-                if (navigationManager != null)
-                {
-                    return new HttpClient { BaseAddress = new Uri(navigationManager.BaseUri) };
-                }
-                
-                // Fallback for scenarios without NavigationManager
-                return new HttpClient();
-            });
-        }
-        
-        // Register as Scoped for Blazor Server compatibility (IJSRuntime is scoped)
+        // Register recent emoji tracking service
         services.AddScoped<IRecentEmoService, RecentEmoService>();
-
-        // Configure HttpClient for EmoService
-        services.AddHttpClient<EmoService>();
         
-        // Register as Scoped to match RecentEmoService and IJSRuntime lifetime
-        services.AddScoped<IEmoService, EmoService>();
-
+        // Register emoji service with factory to handle NavigationManager in scoped context
+        services.AddScoped<IEmoService>(sp =>
+        {
+            // Get or create HttpClient
+            var httpClientFactory = sp.GetService<IHttpClientFactory>();
+            HttpClient httpClient;
+            
+            if (httpClientFactory != null)
+            {
+                httpClient = httpClientFactory.CreateClient("BlazorEmo");
+            }
+            else
+            {
+                // Fallback if HttpClientFactory is not available (shouldn't happen in modern Blazor)
+                httpClient = new HttpClient();
+            }
+            
+            // Set base address from NavigationManager (available in scoped context)
+            if (httpClient.BaseAddress == null)
+            {
+                var navManager = sp.GetService<NavigationManager>();
+                if (navManager != null)
+                {
+                    httpClient.BaseAddress = new Uri(navManager.BaseUri);
+                }
+            }
+            
+            var recentService = sp.GetRequiredService<IRecentEmoService>();
+            return new EmoService(httpClient, recentService);
+        });
+        
+        // Register named HttpClient for BlazorEmo
+        services.AddHttpClient("BlazorEmo");
+        
         return services;
     }
 }
