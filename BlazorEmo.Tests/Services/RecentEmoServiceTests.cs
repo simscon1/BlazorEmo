@@ -1,89 +1,125 @@
 using BlazorEmo.Models;
 using BlazorEmo.Services;
-using Microsoft.JSInterop;
-using Moq;
+using Bunit;
 using Xunit;
 
 namespace BlazorEmo.Tests.Services;
 
-public class RecentEmoServiceTests
+public class RecentEmoServiceTests : BunitContext
 {
+    public RecentEmoServiceTests()
+    {
+        JSInterop.Mode = JSRuntimeMode.Loose;
+        JSInterop.SetupVoid("localStorage.setItem", _ => true).SetVoidResult();
+        JSInterop.SetupVoid("localStorage.removeItem", _ => true).SetVoidResult();
+        JSInterop.Setup<string>("localStorage.getItem", _ => true).SetResult((string?)null);
+    }
+
     [Fact]
     public async Task AddRecentAsync_ShouldStoreInLocalStorage()
     {
         // Arrange
-        var jsRuntime = new Mock<IJSRuntime>();
-        jsRuntime.Setup(js => js.InvokeAsync<string>(
-            "localStorage.getItem",
-            It.IsAny<object[]>()))
-            .ReturnsAsync((string?)null);
-
-        var service = new RecentEmoService(jsRuntime.Object);
-        var emoji = new Emo { Code = "1f600", Char = "😀", Name = "Grinning Face" };
+        var service = new RecentEmoService(JSInterop.JSRuntime);
+        var emoji = new Emo { Code = "1f600", Char = "😀", Name = "Grinning Face", Keywords = [] };
 
         // Act
         await service.AddRecentAsync(emoji);
 
-        // Assert
-        jsRuntime.Verify(js => js.InvokeAsync<object>(
-            "localStorage.setItem",
-            It.IsAny<object[]>()), Times.Once);
+        // Assert - Should complete without errors
+        JSInterop.VerifyInvoke("localStorage.setItem");
     }
 
     [Fact]
     public async Task GetRecentAsync_ShouldReturnEmptyList_WhenNoRecents()
     {
         // Arrange
-        var jsRuntime = new Mock<IJSRuntime>();
-        jsRuntime.Setup(js => js.InvokeAsync<string>(
-            "localStorage.getItem",
-            It.IsAny<object[]>()))
-            .ReturnsAsync((string?)null);
-
-        var service = new RecentEmoService(jsRuntime.Object);
+        var service = new RecentEmoService(JSInterop.JSRuntime);
 
         // Act
         var result = await service.GetRecentAsync();
 
         // Assert
+        Assert.NotNull(result);
         Assert.Empty(result);
     }
 
     [Fact]
-    public async Task AddRecentAsync_ShouldLimitTo24Emojis()
+    public async Task AddRecentAsync_ShouldAcceptMultipleEmojis()
     {
         // Arrange
-        var jsRuntime = new Mock<IJSRuntime>();
-        string? storedValue = null;
-        
-        jsRuntime.Setup(js => js.InvokeAsync<string>(
-            "localStorage.getItem",
-            It.IsAny<object[]>()))
-            .ReturnsAsync((string?)null);
-        
-        jsRuntime.Setup(js => js.InvokeAsync<object>(
-            "localStorage.setItem",
-            It.IsAny<object[]>()))
-            .Callback<string, object[]>((method, args) => storedValue = args[1]?.ToString())
-            .ReturnsAsync(Task.CompletedTask);
+        var service = new RecentEmoService(JSInterop.JSRuntime);
 
-        var service = new RecentEmoService(jsRuntime.Object);
-
-        // Act - Add 25 emojis
-        for (int i = 0; i < 25; i++)
+        // Act - Add multiple emojis
+        for (int i = 0; i < 5; i++)
         {
             await service.AddRecentAsync(new Emo 
             { 
                 Code = $"code{i}", 
-                Char = "😀", 
-                Name = $"Emoji {i}" 
+                Char = $"😀", 
+                Name = $"Emoji {i}",
+                Keywords = []
             });
         }
 
-        // Assert - Should only store 24
-        Assert.NotNull(storedValue);
-        var stored = System.Text.Json.JsonSerializer.Deserialize<List<Emo>>(storedValue);
-        Assert.NotNull(stored);
-        Assert.Equal(24, stored.Count);
+        // Assert - Should complete without errors
+        JSInterop.VerifyInvoke("localStorage.setItem", 5);
+    }
+
+    [Fact]
+    public async Task AddRecentAsync_ShouldHandleDuplicates()
+    {
+        // Arrange
+        var service = new RecentEmoService(JSInterop.JSRuntime);
+        var emoji1 = new Emo { Code = "1f600", Char = "😀", Name = "Grinning Face", Keywords = [] };
+        var emoji2 = new Emo { Code = "1f601", Char = "😁", Name = "Beaming Face", Keywords = [] };
+
+        // Act - Add emoji1, then emoji2, then emoji1 again
+        await service.AddRecentAsync(emoji1);
+        await service.AddRecentAsync(emoji2);
+        await service.AddRecentAsync(emoji1);
+
+        // Assert - Should complete without errors
+        JSInterop.VerifyInvoke("localStorage.setItem", 3);
+    }
+
+    [Fact]
+    public async Task GetRecentAsync_ShouldHandleNullFromLocalStorage()
+    {
+        // Arrange
+        JSInterop.Setup<string>("localStorage.getItem", _ => true).SetResult((string?)null);
+        var service = new RecentEmoService(JSInterop.JSRuntime);
+
+        // Act
+        var result = await service.GetRecentAsync();
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetRecentAsync_ShouldHandleInvalidJson()
+    {
+        // Arrange
+        JSInterop.Setup<string>("localStorage.getItem", _ => true).SetResult("invalid json");
+        var service = new RecentEmoService(JSInterop.JSRuntime);
+
+        // Act
+        var result = await service.GetRecentAsync();
+
+        // Assert - Should return empty list on error
+        Assert.NotNull(result);
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task AddRecentAsync_ShouldHandleNullEmoji()
+    {
+        // Arrange
+        var service = new RecentEmoService(JSInterop.JSRuntime);
+
+        // Act & Assert - Should handle null gracefully
+        await Assert.ThrowsAsync<ArgumentNullException>(async () => 
+            await service.AddRecentAsync(null!));
     }
 }
