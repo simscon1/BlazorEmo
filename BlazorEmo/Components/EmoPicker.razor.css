@@ -404,11 +404,12 @@
 }
 
 /* Dark mode with proper contrast ratios (WCAG AAA) */
+/* Supports both system preference AND programmatic dark mode via class */
 @media (prefers-color-scheme: dark) {
     .emoji-picker-backdrop {
         background-color: rgba(0, 0, 0, 0.5);
     }
-    
+
     .emoji-picker {
         background-color: #1f2937;
         border-color: #4b5563;
@@ -418,7 +419,7 @@
         background-color: #111827;
         border-bottom-color: #374151;
     }
-    
+
     .emoji-search-input {
         background-color: #374151;
         border-color: #4b5563;
@@ -435,11 +436,11 @@
         background-color: #1f2937;
         border-bottom-color: #374151;
     }
-    
+
     .emoji-current-category {
         color: #d1d5db;
     }
-    
+
     .emoji-name-display {
         color: #60a5fa;
     }
@@ -483,6 +484,104 @@
     }
 }
 
+/* Programmatic dark mode via class (takes precedence over system preference) */
+.dark-mode.emoji-picker-backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.dark-mode.emoji-picker {
+    background-color: #1f2937;
+    border-color: #4b5563;
+}
+
+.dark-mode .emoji-picker-search {
+    background-color: #111827;
+    border-bottom-color: #374151;
+}
+
+.dark-mode .emoji-search-input {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+}
+
+.dark-mode .emoji-search-input::placeholder {
+    color: #9ca3af;
+}
+
+.dark-mode .emoji-search-input:focus {
+    border-color: #60a5fa;
+    background-color: #1e3a8a;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.3);
+}
+
+.dark-mode .emoji-content-header {
+    background-color: #1f2937;
+    border-bottom-color: #374151;
+}
+
+.dark-mode .emoji-current-category {
+    color: #d1d5db;
+}
+
+.dark-mode .emoji-name-display {
+    color: #60a5fa;
+}
+
+.dark-mode .emoji-picker-loading,
+.dark-mode .emoji-picker-empty {
+    color: #d1d5db;
+}
+
+.dark-mode .emoji-item:hover {
+    background-color: #374151;
+}
+
+.dark-mode .emoji-item:active {
+    background-color: #1e3a8a;
+    border-color: #60a5fa;
+}
+
+.dark-mode .emoji-item:focus {
+    border-color: #60a5fa;
+    background-color: #1e3a8a;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.3);
+}
+
+.dark-mode .emoji-tabs {
+    background-color: #1f2937;
+    border-bottom-color: #374151;
+}
+
+.dark-mode .emoji-scrollable-content::-webkit-scrollbar-track {
+    background: #1f2937;
+}
+
+.dark-mode .emoji-scrollable-content::-webkit-scrollbar-thumb {
+    background: #4b5563;
+}
+
+.dark-mode .emoji-scrollable-content::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
+
+.dark-mode .emoji-tab:hover {
+    background-color: #374151;
+}
+
+.dark-mode .emoji-tab.active {
+    background-color: #4b5563;
+}
+
+.dark-mode .emoji-tab:focus {
+    border-color: #60a5fa;
+    background-color: #1e3a8a;
+}
+
+.dark-mode .emoji-tab[aria-selected="true"]::after {
+    background-color: #60a5fa;
+}
+
 /* ========================================
    WCAG 2.1 AA/AAA Compliance Enhancements
    ======================================== */
@@ -519,6 +618,15 @@
         background-color: #1e3a8a;
         box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.4);
     }
+}
+
+.dark-mode .emoji-item:focus-visible,
+.dark-mode .emoji-tab:focus-visible,
+.dark-mode .emoji-search-input:focus-visible {
+    outline: none;
+    border-color: #60a5fa;
+    background-color: #1e3a8a;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.4);
 }
 
 /* Windows High Contrast Mode - WCAG 1.4.1 */
@@ -578,6 +686,10 @@
     .emoji-item[data-keyboard-focused="true"] {
         outline-color: #60a5fa;
     }
+}
+
+.dark-mode .emoji-item[data-keyboard-focused="true"] {
+    outline-color: #60a5fa;
 }
 
 /* Zoom and Magnification Support - WCAG 1.4.4 (Level AA) */

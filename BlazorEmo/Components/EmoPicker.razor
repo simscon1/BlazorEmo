@@ -5,11 +5,11 @@
 
 @if (IsOpen)
 {
-    <div class="emoji-picker-backdrop" 
+    <div class="emoji-picker-backdrop @(DarkMode ? "dark-mode" : "")" 
          @onclick="HandleBackdropClick"
          @onclick:stopPropagation>
-        
-        <div class="emoji-picker emoji-picker-open"
+
+        <div class="emoji-picker emoji-picker-open @(DarkMode ? "dark-mode" : "")"
              role="dialog"
              aria-label="Emoji picker"
              aria-describedby="emoji-picker-description"
