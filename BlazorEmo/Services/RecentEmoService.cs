@@ -38,6 +38,8 @@ public class RecentEmoService : IRecentEmoService
 
     public async Task AddRecentAsync(Models.Emo emoji)
     {
+        ArgumentNullException.ThrowIfNull(emoji);
+
         var recents = await GetRecentAsync();
         
         // Remove if already exists (to avoid duplicates)
