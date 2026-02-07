@@ -5,7 +5,7 @@
 
 <PageTitle>BlazorEmo Demo</PageTitle>
 
-<div class="demo-container">
+<div class="demo-container @(isDarkMode ? "dark-mode" : "")">
     <div class="header-section">
         <div class="badge-container">
             <img src="icon.png" alt="BlazorEmo Badge" width="100" height="100" />
@@ -20,17 +20,30 @@
     <div class="demo-card">
         <h2>Try it out:</h2>
 
-        <button class="emoji-button" @onclick="ToggleEmoPicker">
-            @if (selectedEmoji != null)
-            {
-                <span class="emoji-display">@selectedEmoji.Char</span>
-                <span>@selectedEmoji.Name</span>
-            }
-            else
-            {
-                <span>😀 Pick an Emoji</span>
-            }
-        </button>
+        <div class="button-group">
+            <button class="emoji-button" @onclick="ToggleEmoPicker">
+                @if (selectedEmoji != null)
+                {
+                    <span class="emoji-display">@selectedEmoji.Char</span>
+                    <span>@selectedEmoji.Name</span>
+                }
+                else
+                {
+                    <span>😀 Pick an Emoji</span>
+                }
+            </button>
+
+            <button class="emoji-button dark-mode-toggle" @onclick="ToggleDarkMode">
+                @(isDarkMode ? "🌞 Light Mode" : "🌙 Dark Mode")
+            </button>
+        </div>
+
+        @if (isDarkMode)
+        {
+            <div class="dark-mode-notice">
+                <strong>ℹ️ Dark Mode Active:</strong> The emoji picker will render with dark theme styling.
+            </div>
+        }
 
         @if (selectedEmoji != null)
         {
@@ -105,17 +118,21 @@
             <li>⌨️ Full keyboard navigation support</li>
             <li>♿ Screen reader accessible</li>
             <li>🔔 Event callbacks for analytics</li>
+            <li>🌙 Dark mode support with WCAG AAA contrast</li>
         </ul>
     </div>
  </div>
 
-<EmoPicker IsOpen="@isPickerOpen"
-             OnEmojiSelected="@HandleEmojiSelected"
-             OnClose="@CloseEmoPicker"
-             UseCompleteDataset="true"
-             OnOpened="@HandlePickerOpened"
-             OnCategoryChanged="@TrackCategorySwitch"
-             OnSearchChanged="@UpdateExternalSearchSuggestions" />
+<div class="@(isDarkMode ? "dark-mode" : "")">
+    <EmoPicker IsOpen="@isPickerOpen"
+                 OnEmojiSelected="@HandleEmojiSelected"
+                 OnClose="@CloseEmoPicker"
+                 UseCompleteDataset="true"
+                 OnOpened="@HandlePickerOpened"
+                 OnCategoryChanged="@TrackCategorySwitch"
+                 OnSearchChanged="@UpdateExternalSearchSuggestions"
+                 DarkMode="@isDarkMode" />
+</div>
 
 @code {
     private bool isPickerOpen = false;
@@ -127,6 +144,13 @@
     private string currentSearch = "";
     private List<string> categoryHistory = new();
     private List<string> searchHistory = new();
+
+    private bool isDarkMode = false;
+    
+    private void ToggleDarkMode()
+    {
+        isDarkMode = !isDarkMode;
+    }
 
     private void ToggleEmoPicker()
     {
@@ -193,6 +217,13 @@
         max-width: 800px;
         margin: 2rem auto;
         padding: 1rem;
+        min-height: 100vh;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .demo-container.dark-mode {
+        background-color: #0f172a;
+        color: #e2e8f0;
     }
 
     .header-section {
@@ -218,6 +249,13 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
+    .button-group {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
     .emoji-button {
         display: flex;
         align-items: center;
@@ -230,6 +268,19 @@
         border-radius: 8px;
         cursor: pointer;
         transition: all 0.2s;
+        flex: 1;
+        min-width: 200px;
+        justify-content: center;
+    }
+
+    .dark-mode-toggle {
+        background: #6366f1;
+        flex: 0 1 auto;
+        min-width: 160px;
+    }
+
+    .dark-mode-toggle:hover {
+        background: #4f46e5;
     }
 
         .emoji-button:hover {
@@ -352,9 +403,17 @@
         margin-bottom: 1rem;
     }
 
+    .dark-mode h1 {
+        color: #f1f5f9;
+    }
+
     h2 {
         color: #555;
         margin-top: 0;
+    }
+
+    .dark-mode h2 {
+        color: #cbd5e1;
     }
 
     .card-header {
@@ -442,4 +501,83 @@
             overflow-x: auto;
         }
 
+    .dark-mode {
+        color-scheme: dark;
+        background: #1a1a1a;
+        color: #e0e0e0;
+    }
+
+    .dark-mode-notice {
+        margin-top: 1rem;
+        padding: 0.75rem 1rem;
+        background: #eff6ff;
+        color: #1e40af;
+        border-radius: 6px;
+        border-left: 4px solid #3b82f6;
+        font-size: 0.9rem;
+    }
+
+    .dark-mode-notice strong {
+        color: #1e3a8a;
+    }
+
+    .dark-mode .dark-mode-notice {
+        background: #1e3a8a;
+        color: #bfdbfe;
+        border-left-color: #60a5fa;
+    }
+
+    .dark-mode .dark-mode-notice strong {
+        color: #93c5fd;
+    }
+
+    /* Dark mode card styling */
+    .dark-mode .demo-card {
+        background: #2d3748;
+        color: #e0e0e0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .dark-mode .demo-card h2,
+    .dark-mode .demo-card h3 {
+        color: #90cdf4;
+    }
+
+    .dark-mode .emoji-info {
+        background: #1a202c;
+        border-left-color: #4299e1;
+    }
+
+    .dark-mode .emoji-info h3 {
+        color: #63b3ed;
+    }
+
+    .dark-mode .event-log {
+        background: #1a202c;
+    }
+
+    .dark-mode .event-item {
+        border-bottom-color: #4a5568;
+    }
+
+    .dark-mode .event-value {
+        color: #63b3ed;
+    }
+
+    .dark-mode .history-section {
+        border-top-color: #4a5568;
+    }
+
+    /* Responsive button layout */
+    @@media (max-width: 600px) {
+        .button-group {
+            flex-direction: column;
+        }
+
+        .emoji-button,
+        .dark-mode-toggle {
+            width: 100%;
+            flex: 1;
+        }
+    }
 </style>

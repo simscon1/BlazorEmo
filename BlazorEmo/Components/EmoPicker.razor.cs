@@ -70,6 +70,13 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
     /// </summary>
     [Parameter] public bool UseVirtualization { get; set; } = true;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether dark mode is enabled.
+    /// When true, the picker will use dark theme colors regardless of system preference.
+    /// When false, the picker respects the system's prefers-color-scheme setting.
+    /// </summary>
+    [Parameter] public bool DarkMode { get; set; } = false;
+
     private IJSObjectReference? _jsModule;
     private string searchQuery = "";
     private string activeTab = "recent";
