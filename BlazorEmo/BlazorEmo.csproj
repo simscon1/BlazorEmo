@@ -10,11 +10,11 @@
 
 	  <!-- NuGet Package Metadata -->
 	  <PackageId>BlazorEmo</PackageId>
-	  <Version>1.0.0</Version>
+	  <Version>1.1.0</Version>
 	  <Authors>simscon1</Authors>
 	  <Company>LoneWorx LLC</Company>
 	  <Product>BlazorEmo</Product>
-	  <Description>A modern, fully accessible emoji picker component for Blazor WebAssembly and Server applications. Features include live search, category organization, recent emoji tracking, WCAG 2.1 AA compliance (approaching AAA), full keyboard navigation, screen reader support, and dark mode.</Description>
+	  <Description>A modern, fully accessible emoji picker component for Blazor WebAssembly and Server applications. Features include live search, category organization, recent emoji tracking, WCAG 2.1 AA compliance (approaching AAA), full keyboard navigation, screen reader support, and programmatic dark mode with system preference detection.</Description>
 	  <Copyright>Copyright © 2026 LoneWorx LLC</Copyright>
 	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
@@ -32,13 +32,21 @@
 
 	  <!-- Release Notes -->
 	  <PackageReleaseNotes>
-	    Initial release of BlazorEmo v1.0.0
-	    - Full emoji picker with search and categories
-	    - WCAG 2.1 Level AA compliant (text contrast exceeds AAA standards)
-	    - Keyboard navigation and screen reader support
-	    - Dark mode with enhanced contrast ratios (7:1+)
-	    - LocalStorage-based recent emoji tracking
-	    - Blazor WebAssembly and Server support
+		BlazorEmo v1.1.0 - Initial Release
+
+		Features:
+		- 1,800+ emojis across 9 categories (Smileys, People, Animals, Food, Travel, Activities, Objects, Symbols, Flags)
+		- Full emoji picker with live search and category organization
+		- WCAG 2.1 Level AA compliant (text contrast exceeds AAA standards at 7:1+)
+		- Full keyboard navigation and screen reader support
+		- Programmatic dark mode with automatic system preference detection
+		- Smooth color transitions between light and dark themes
+		- LocalStorage-based recent emoji tracking (max 30 emojis)
+		- Event callbacks for analytics (OnOpened, OnCategoryChanged, OnSearchChanged)
+		- Virtualization support for efficient rendering of large datasets
+		- Works with both Blazor WebAssembly and Server
+		- No service registration required - works standalone
+		- Windows High Contrast mode support
 	  </PackageReleaseNotes>
 	  
   </PropertyGroup>
