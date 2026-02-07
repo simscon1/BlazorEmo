@@ -2,6 +2,7 @@
 @using BlazorEmo.Components
 @using BlazorEmo.Models
 @using BlazorEmo.SvgIcons
+@inject IJSRuntime JS
 
 <PageTitle>BlazorEmo Demo</PageTitle>
 
@@ -146,10 +147,32 @@
     private List<string> searchHistory = new();
 
     private bool isDarkMode = false;
-    
-    private void ToggleDarkMode()
+
+    private async Task ToggleDarkMode()
     {
         isDarkMode = !isDarkMode;
+        await UpdateBodyBackground();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await UpdateBodyBackground();
+        }
+    }
+
+    private async Task UpdateBodyBackground()
+    {
+        try
+        {
+            var backgroundColor = isDarkMode ? "#0f172a" : "";
+            await JS.InvokeVoidAsync("eval", $"document.body.style.backgroundColor = '{backgroundColor}';");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to update body background: {ex.Message}");
+        }
     }
 
     private void ToggleEmoPicker()
@@ -213,6 +236,12 @@
 }
 
 <style>
+    body {
+        margin: 0;
+        padding: 0;
+        transition: background-color 0.3s ease;
+    }
+
     .demo-container {
         max-width: 800px;
         margin: 2rem auto;
@@ -241,12 +270,22 @@
         flex: 1;
     }
 
+    .header-text p {
+        color: #666;
+        transition: color 0.3s ease;
+    }
+
+    .dark-mode .header-text p {
+        color: #94a3b8;
+    }
+
     .demo-card {
         background: white;
         border-radius: 8px;
         padding: 2rem;
         margin: 2rem 0;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
     }
 
     .button-group {
@@ -281,17 +320,29 @@
 
     .dark-mode-toggle:hover {
         background: #4f46e5;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
     }
 
-        .emoji-button:hover {
-            background: #0056b3;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
-        }
+    .emoji-button:hover {
+        background: #0056b3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    }
 
-        .emoji-button:active {
-            transform: translateY(0);
-        }
+    .emoji-button:active {
+        transform: translateY(0);
+    }
+
+    .dark-mode .emoji-button:hover {
+        background: #0056b3;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .dark-mode .dark-mode-toggle:hover {
+        background: #4338ca;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
 
     .emoji-display {
         font-size: 2rem;
@@ -303,32 +354,40 @@
         background: #f8f9fa;
         border-radius: 8px;
         border-left: 4px solid #007bff;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
     }
 
-        .emoji-info h3 {
-            margin-top: 0;
-            color: #007bff;
-        }
+    .emoji-info h3 {
+        margin-top: 0;
+        color: #007bff;
+        transition: color 0.3s ease;
+    }
 
-        .emoji-info ul {
-            list-style: none;
-            padding: 0;
-        }
+    .emoji-info ul {
+        list-style: none;
+        padding: 0;
+    }
 
-        .emoji-info li {
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #dee2e6;
-        }
+    .emoji-info li {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #dee2e6;
+        transition: border-color 0.3s ease;
+    }
 
-            .emoji-info li:last-child {
-                border-bottom: none;
-            }
+    .emoji-info li:last-child {
+        border-bottom: none;
+    }
+
+    .dark-mode .emoji-info li {
+        border-bottom-color: #4a5568;
+    }
 
     .event-log {
         background: #f8f9fa;
         border-radius: 8px;
         padding: 1.5rem;
         margin-bottom: 1.5rem;
+        transition: background-color 0.3s ease;
     }
 
     .event-item {
@@ -337,33 +396,46 @@
         align-items: center;
         padding: 0.75rem 0;
         border-bottom: 1px solid #dee2e6;
+        transition: border-color 0.3s ease;
     }
 
-        .event-item:last-child {
-            border-bottom: none;
-        }
+    .event-item:last-child {
+        border-bottom: none;
+    }
 
-        .event-item strong {
-            color: #555;
-        }
+    .event-item strong {
+        color: #555;
+        transition: color 0.3s ease;
+    }
+
+    .dark-mode .event-item strong {
+        color: #cbd5e1;
+    }
 
     .event-value {
         font-weight: 600;
         color: #007bff;
         font-size: 1.1rem;
+        transition: color 0.3s ease;
     }
 
     .history-section {
         margin-top: 1.5rem;
         padding-top: 1.5rem;
         border-top: 2px solid #e9ecef;
+        transition: border-color 0.3s ease;
     }
 
-        .history-section h3 {
-            color: #007bff;
-            font-size: 1rem;
-            margin-bottom: 0.75rem;
-        }
+    .history-section h3 {
+        color: #007bff;
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+        transition: color 0.3s ease;
+    }
+
+    .dark-mode .history-section h3 {
+        color: #60a5fa;
+    }
 
     .history-pills {
         display: flex;
@@ -393,14 +465,20 @@
         padding: 0;
     }
 
-        .features-list li {
-            padding: 0.75rem 0;
-            font-size: 1.1rem;
-        }
+    .features-list li {
+        padding: 0.75rem 0;
+        font-size: 1.1rem;
+        transition: color 0.3s ease;
+    }
+
+    .dark-mode .features-list li {
+        color: #e2e8f0;
+    }
 
     h1 {
         color: #333;
         margin-bottom: 1rem;
+        transition: color 0.3s ease;
     }
 
     .dark-mode h1 {
@@ -410,10 +488,15 @@
     h2 {
         color: #555;
         margin-top: 0;
+        transition: color 0.3s ease;
     }
 
     .dark-mode h2 {
         color: #cbd5e1;
+    }
+
+    h3 {
+        transition: color 0.3s ease;
     }
 
     .card-header {
