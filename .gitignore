@@ -38,10 +38,6 @@ bld/
 # Uncomment if you have tasks that create the project's static files in wwwroot
 #wwwroot/
 
-# Build results
-[Bb]in/
-[Oo]bj/
-
 # Visual Studio 2017 auto generated files
 Generated\ Files/
 
@@ -365,27 +361,3 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-/BlazorEmo.Demo/obj/Debug/net10.0/BlazorEmo.Demo.genruntimeconfig.cache
-/BlazorEmo.Demo/obj/Debug/net10.0/staticwebassets.removed.txt
-/BlazorEmo.Demo/obj/BlazorEmo.Demo.csproj.nuget.g.props
-/BlazorEmo.Demo/bin/Debug/net10.0/System.Windows.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/System.Xml.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/System.Xml.Linq.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/System.Xml.ReaderWriter.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/System.Xml.Serialization.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/System.Xml.XDocument.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/System.Xml.XmlDocument.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/System.Xml.XmlSerializer.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/System.Xml.XPath.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/System.Xml.XPath.XDocument.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/WindowsBase.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/System.Threading.Tasks.Extensions.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/System.Threading.Tasks.Parallel.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/System.Threading.Thread.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/System.Threading.ThreadPool.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/System.Threading.Timer.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/System.Transactions.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/System.Transactions.Local.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/System.ValueTuple.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/System.Web.dll
-/BlazorEmo.Demo/bin/Debug/net10.0/System.Web.HttpUtility.dll
