@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
@@ -10,7 +10,7 @@
 
 	  <!-- NuGet Package Metadata -->
 	  <PackageId>BlazorEmo</PackageId>
-	  <Version>1.0.0</Version>
+	  <Version>1.0.1</Version>
 	  <Authors>simscon1</Authors>
 	  <Company>LoneWorx LLC</Company>
 	  <Product>BlazorEmo</Product>
@@ -19,34 +19,36 @@
 	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
 	  <!-- URLs and Repository -->
-	  <PackageProjectUrl>https://dev.azure.com/LoneWorxLLC/LoneWorx/_git/BlazorEmo.Solution</PackageProjectUrl>
-	  <RepositoryUrl>https://dev.azure.com/LoneWorxLLC/LoneWorx/_git/BlazorEmo.Solution</RepositoryUrl>
+	  <PackageProjectUrl>https://github.com/simscon1/BlazorEmo</PackageProjectUrl>
+	  <RepositoryUrl>https://github.com/simscon1/BlazorEmo</RepositoryUrl>
 	  <RepositoryType>git</RepositoryType>
 
 	  <!-- Package Tags for Discoverability -->
-	  <PackageTags>blazor;emoji;picker;webassembly;server;component;ui;accessibility;wcag;a11y;keyboard-navigation;screen-reader;dark-mode;blazor-component;emoji-picker;blazor-ui;net10</PackageTags>
+	  <PackageTags>blazor;emoji;picker;webassembly;server;component;ui;accessibility;wcag;a11y;keyboard-navigation;screen-reader;dark-mode;blazor-component;emoji-picker;blazor-ui</PackageTags>
 
 	  <!-- Package Assets -->
 	  <PackageReadmeFile>README.md</PackageReadmeFile>
 	  <PackageIcon>icon.png</PackageIcon>
 
+	  <!-- Debug / SourceLink -->
+	  <DebugType>embedded</DebugType>
+	  <PublishRepositoryUrl>true</PublishRepositoryUrl>
+	  <EmbedUntrackedSources>true</EmbedUntrackedSources>
+
 	  <!-- Release Notes -->
 	  <PackageReleaseNotes>
-		BlazorEmo v1.0.0 - Initial Release
+		v1.0.1 - Multi-target support
+		- Added: .NET 8 and .NET 9 support (multi-target net8.0, net9.0, net10.0)
+		- Added: Embedded debug symbols and SourceLink for consumer debugging
 
-		Features:
-		- 1,800+ emojis across 9 categories (Smileys, People, Animals, Food, Travel, Activities, Objects, Symbols, Flags)
+		v1.0.0 - Initial Release
+		- 1,800+ emojis across 9 categories
 		- Full emoji picker with live search and category organization
-		- WCAG 2.1 Level AA compliant (text contrast exceeds AAA standards at 7:1+)
+		- WCAG 2.1 Level AA compliant
 		- Full keyboard navigation and screen reader support
 		- Programmatic dark mode with automatic system preference detection
-		- Smooth color transitions between light and dark themes
-		- LocalStorage-based recent emoji tracking (max 30 emojis)
-		- Event callbacks for analytics (OnOpened, OnCategoryChanged, OnSearchChanged)
-		- Virtualization support for efficient rendering of large datasets
+		- Virtualization support for efficient rendering
 		- Works with both Blazor WebAssembly and Server
-		- No service registration required - works standalone
-		- Windows High Contrast mode support
 	  </PackageReleaseNotes>
 	  
   </PropertyGroup>
@@ -62,12 +64,25 @@
     <Compile Include="Extensions\ServiceCollectionExtensions.cs" />
   </ItemGroup>
 
-
   <ItemGroup>
     <SupportedPlatform Include="browser" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.3" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.2" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
   </ItemGroup>
