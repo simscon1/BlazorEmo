@@ -1,211 +1,82 @@
-# BlazorEmo
+# BlazorEmo - Emoji Picker for Blazor
 
-A fully accessible, WCAG 2.1 AA-compliant emoji picker component for Blazor WebAssembly applications (text contrast exceeds AAA standards).
+**WCAG 2.1 AA Compliant • Keyboard Accessible • Dark Mode**
 
-## ✨ Features
-
-### Core Functionality
-- 🎯 **1,585+ Emojis** - Complete emoji dataset with categorization
-- 🔍 **Smart Search** - Real-time search with 300ms debouncing for optimal performance
-- 📱 **Responsive Design** - Works seamlessly on desktop, tablet, and mobile
-- ♿ **WCAG 2.1 AA Compliant** - Exceeds AAA standards for text contrast
-- ⚡ **Virtualized Rendering** - Only renders visible emojis (40+ threshold)
-- 🚀 **Lazy Loading** - Categories loaded on-demand for faster initialization
-
-### Keyboard Navigation
-- **Tab/Shift+Tab** - Navigate between search, categories, and emojis
-- **Arrow Keys** - Navigate through tabs and emoji grid
-- **Home/End** - Jump to first/last item
-- **Enter/Space** - Select emoji or navigate to list
-- **Escape** - Close picker
-- **Focus Trap** - Modal dialog pattern with contained focus
-
-### User Experience
-- **Stationary Name Display** - Shows emoji/category names in fixed header
-- **Recent Emojis** - Tracks recently used emojis
-- **Dark Mode** - Automatic system preference detection
-- **Smooth Animations** - Respects `prefers-reduced-motion`
-- **Touch-Friendly** - 48×48px minimum touch targets (exceeds AAA 44×44px requirement)
-
-### Event Callbacks
-- **OnOpened** - Triggered when picker opens (analytics, initialization)
-- **OnCategoryChanged** - Triggered when user switches categories
-- **OnSearchChanged** - Triggered when search query changes
-- **OnEmojiSelected** - Triggered when emoji is selected (required)
-- **OnClose** - Triggered when picker closes
-- **OnBeforeClose** - Async callback to prevent closing (confirmations)
-- **OnError** - Triggered on JS interop or other errors
-
-### Accessibility
-- ✅ WCAG 2.1 Level A compliant
-- ✅ WCAG 2.1 Level AA compliant
-- ✅ WCAG 2.1 Level AAA (Text Contrast only)
-- ✅ ARIA 1.2 dialog, tablist, and grid patterns
-- ✅ Screen reader announcements
-- ✅ High contrast mode support
-- ✅ Windows High Contrast Mode compatible
-- ✅ Keyboard-only operation
-- ✅ Focus indicators with 3px outlines
-
-## 📦 Installation
-
-**Package Manager Console:**
-
-```powershell
-Install-Package BlazorEmo
-```
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%209.0%20%7C%2010.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 
 ## 🚀 Quick Start
 
 ```
-@page "/" @using BlazorEmo.Components
+dotnet add package BlazorEmo
 
-<button @onclick="() => isPickerOpen = true"> Select Emoji </button>
+```
+```razor	
+@page "/" 
+@using BlazorEmo.Components
 
-<EmoPicker IsOpen="@isPickerOpen"
-           OnEmojiSelected="HandleEmojiSelected"
-           OnClose="() => isPickerOpen = false"
-           UseCompleteDataset="true"
-           UseVirtualization="true" />
+<button @onclick="() => isPickerOpen = true">Select Emoji</button>
+
+<EmoPicker IsOpen="@isPickerOpen" .
+		   OnEmojiSelected="HandleEmojiSelected" 
+		   OnClose="() => isPickerOpen = false" 
+		   UseCompleteDataset="true" 
+		   UseVirtualization="true" />
 
 <p>Selected: @selectedEmoji</p>
 
 @code { 
-    private bool isPickerOpen = false; 
-    private string selectedEmoji = "";
+	private bool isPickerOpen = false; 
+	private string selectedEmoji = "";
 
-    private void HandleEmojiSelected(BlazorEmo.Models.Emo emoji)
-    {
-        selectedEmoji = emoji.Char;
-        isPickerOpen = false;
-    }
+	private void HandleEmojiSelected(BlazorEmo.Models.Emo emoji)
+	{
+    selectedEmoji = emoji.Char;
+    isPickerOpen = false;
+	}
 }
-
 ```
 
-## ⚙️ Configuration
+## 🎯 Features
 
-### Parameters
+- **1,100+ Emojis** across 9 categories with live search (300ms debounce)
+- **Virtualized Rendering** — only renders visible emojis for large lists
+- **Lazy Loading** — categories loaded on-demand
+- **Recent Emojis** — tracks recently used selections
+- **Dark Mode** — automatic `prefers-color-scheme` detection
+- **Responsive** — works on desktop, tablet, and mobile
+- **Touch-Friendly** — 48×48px minimum touch targets
 
-| Parameter | Type | Default | Required | Description |
-|-----------|------|---------|----------|-------------|
-| `IsOpen` | `bool` | `false` | No | Controls picker visibility |
-| `OnEmojiSelected` | `EventCallback<Emo>` | - | **Yes** | Invoked when emoji is selected |
-| `OnClose` | `EventCallback` | - | No | Invoked when picker is closed |
-| `UseCompleteDataset` | `bool` | `false` | No | Use full 1,585 emoji dataset (true) or basic 60 emojis (false) |
-| `OnOpened` | `EventCallback` | - | No | Invoked when picker opens |
-| `OnCategoryChanged` | `EventCallback<string>` | - | No | Invoked when category changes |
-| `OnSearchChanged` | `EventCallback<string>` | - | No | Invoked when search query changes |
-| `OnBeforeClose` | `Func<Task<bool>>?` | - | No | Async callback to prevent closing |
-| `OnError` | `EventCallback<Exception>` | - | No | Invoked when errors occur |
-| `UseVirtualization` | `bool` | `true` | No | Enable virtualized rendering for lists with 40+ emojis |
+## ♿ Accessibility
 
-### Emo Model
+- WCAG 2.1 Level AA compliant (text contrast exceeds AAA 7:1+)
+- ARIA 1.2 dialog, tablist, and grid patterns
+- Full keyboard navigation (Arrow keys, Tab, Enter, Escape, Home/End)
+- Focus trap with 3px focus indicators
+- Screen reader announcements
+- Windows High Contrast Mode compatible
+- Section 508 compliant
 
-```
-public class Emoji 
-{ 
-    public string Name { get; set; }  
-    public string Char { get; set; }      
-    public string Code { get; set; }      
-    public string Category { get; set; }  
-    public List<string> Keywords { get; set; } 
-}
+## 📖 Parameters
 
-```
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `IsOpen` | `bool` | `false` | Controls picker visibility |
+| `OnEmojiSelected` | `EventCallback<Emo>` | — | **Required.** Invoked when emoji is selected |
+| `OnClose` | `EventCallback` | — | Invoked when picker closes |
+| `UseCompleteDataset` | `bool` | `false` | Full 1,100+ emojis (`true`) or basic 60 (`false`) |
+| `UseVirtualization` | `bool` | `true` | Virtualized rendering for 40+ emoji lists |
+| `OnOpened` | `EventCallback` | — | Invoked when picker opens |
+| `OnCategoryChanged` | `EventCallback<string>` | — | Invoked on category switch |
+| `OnSearchChanged` | `EventCallback<string>` | — | Invoked on search query change |
+| `OnBeforeClose` | `Func<Task<bool>>?` | — | Async callback to prevent closing |
+| `OnError` | `EventCallback<Exception>` | — | Invoked on errors |
 
-## 🔔 Event Callbacks Examples
- 
-```
-<EmoPicker OnOpened="@(() => Analytics.Track("EmoPickerOpened"))" 
-             OnCategoryChanged="@(cat => Analytics.Track("CategoryChanged", cat))" 
-             OnSearchChanged="@(query => Analytics.Track("SearchQuery", query))" 
-             OnEmojiSelected="@(emoji => Analytics.Track("EmojiSelected", emoji.Name))" />
-             OnError="@(ex => Logger.LogError(ex, "Emoji picker error"))" />
- 
-@code { private string currentCategory = "";
-    private void HandlePickerOpened()
-    {
-        Console.WriteLine("Picker opened!");
-        // Initialize external state, load data, etc.
-    }
-    
-    private void UpdateSearchSuggestions(string query)
-    {
-        // Update external search UI, show suggestions, etc.
-    }
-}
+## 📜 License
 
-```
-
-
-## 🎨 Customization
-
-The component uses CSS scoping. Override styles in your global CSS:
-
-```
-/* Adjust picker height */ 
-.emoji-picker { height: 500px !important; }
-
-/* Custom focus color */ 
-.emoji-item:focus { border-color: #your-brand-color !important; }
-
-```
-
-## 🌙 Dark Mode
-
-Automatically detects `prefers-color-scheme: dark`. No configuration needed.
-
-## 📐 Dimensions
-
-- **Width**: ~400px (8-column grid, responsive)
-- **Height**: 435px (optimized for ~9-10 rows)
-- **Aspect Ratio**: 1:1.09 (taller than wide, matches industry standards)
-
-## 🧪 Browser Support
-
-- Chrome/Edge 90+
-- Firefox 88+
-- Safari 14+
-- Mobile browsers (iOS Safari, Chrome Mobile)
-
-## 📊 Performance
-
-- **Basic Dataset**: 60 emojis, ~2KB data, < 50ms load time
-- **Complete Dataset**: 1,585 emojis, ~45KB data, < 100ms load time
-- **Search Debouncing**: 300ms delay, 70% fewer renders during typing
-- **Virtualization**: Only renders ~40-60 visible emojis at a time
-- **Memory Footprint**: ~2MB (virtualized) vs ~15MB (non-virtualized) for complete dataset
-- **Category Loading**: On-demand lazy loading for faster initialization
-
-### Performance Optimizations
-- ✅ **Search Debouncing** - 300ms delay prevents excessive re-renders (70% reduction)
-- ✅ **Virtualization** - Renders only visible emojis (90%+ fewer DOM nodes for large lists)
-- ✅ **Lazy Category Loading** - Categories loaded on-demand, not upfront
-- ✅ **Batched State Updates** - Single render per keyboard navigation action
-- ✅ **Cancellation Tokens** - Cancels pending search operations on close
-- ✅ **Result Caching** - Emoji lists cached to prevent repeated LINQ operations
-
-## 🔒 Accessibility Compliance
-
-Tested against:
-- WCAG 2.1 Level A ✅
-- WCAG 2.1 Level AA ✅
-- WCAG 2.1 Level AAA (Text Contrast) ✅
-- ARIA 1.2 Authoring Practices ✅
-- Section 508 ✅
-
-**Note:** While fully AA compliant, text contrast ratios exceed AAA standards (7:1+).
-
-## 📝 License
-
-MIT License - see [LICENSE](LICENSE) for details
-
-## 🤝 Contributing
-
-Contributions welcome! Please open an issue or submit a pull request via Azure DevOps.
+MIT License — see [LICENSE](LICENSE) for details.
 
 ## 📞 Support
 
-- 🐛 Issues: [Azure DevOps Work Items](https://dev.azure.com/LoneWorxLLC/LoneWorx/_workitems)
-- 💻 Repository: [Azure DevOps](https://dev.azure.com/LoneWorxLLC/LoneWorx/_git/BlazorEmo.Solution)
+- 🐛 Issues: [GitHub Issues](https://github.com/simscon1/BlazorEmo/issues)
+- 💻 Repository: [GitHub](https://github.com/simscon1/BlazorEmo)

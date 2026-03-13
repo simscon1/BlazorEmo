@@ -10,7 +10,7 @@
 
 	  <!-- NuGet Package Metadata -->
 	  <PackageId>BlazorEmo</PackageId>
-	  <Version>1.0.1</Version>
+	  <Version>1.0.2</Version>
 	  <Authors>simscon1</Authors>
 	  <Company>LoneWorx LLC</Company>
 	  <Product>BlazorEmo</Product>
@@ -37,12 +37,17 @@
 
 	  <!-- Release Notes -->
 	  <PackageReleaseNotes>
+		v1.0.2 - Package cleanup
+		- Fixed: README accuracy — corrected emoji count, model documentation, and repository links
+		- Fixed: SourceLink now points to GitHub for public consumer debugging
+		- Fixed: README and icon now correctly packed into NuGet package
+
 		v1.0.1 - Multi-target support
 		- Added: .NET 8 and .NET 9 support (multi-target net8.0, net9.0, net10.0)
 		- Added: Embedded debug symbols and SourceLink for consumer debugging
 
 		v1.0.0 - Initial Release
-		- 1,800+ emojis across 9 categories
+		- 1,100+ emojis across 9 categories
 		- Full emoji picker with live search and category organization
 		- WCAG 2.1 Level AA compliant
 		- Full keyboard navigation and screen reader support
@@ -62,6 +67,10 @@
 
   <ItemGroup>
     <Compile Include="Extensions\ServiceCollectionExtensions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="icon.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -89,5 +98,10 @@
 
   <ItemGroup>
     <Folder Include="wwwroot\data\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 </Project>
