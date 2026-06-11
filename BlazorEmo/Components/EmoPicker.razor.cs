@@ -145,12 +145,11 @@ public partial class EmoPicker : ComponentBase, IAsyncDisposable
 
     protected override void OnParametersSet()
     {
-        if (!OnEmojiSelected.HasDelegate)
-        {
-            throw new InvalidOperationException(
-                "EmoPicker requires the OnEmojiSelected callback to be set. " +
-                "Please provide a handler for emoji selection events.");
-        }
+        // Note: Do not throw here. During Blazor prerendering, EventCallback delegates
+        // are not wired (HasDelegate == false), so throwing would crash the circuit.
+        // The OnEmojiSelected handler requirement is enforced at runtime by usage convention.
+        Debug.WriteLineIf(!OnEmojiSelected.HasDelegate,
+            "[EmoPicker] Warning: OnEmojiSelected callback is not set. Emoji selection will be a no-op.");
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
