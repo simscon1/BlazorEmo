@@ -1,6 +1,6 @@
 # BlazorEmo - Emoji Picker for Blazor
 
-**WCAG 2.1 AA Compliant • Keyboard Accessible • Dark Mode**
+**Keyboard Accessible • Dark Mode**
 
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%209.0%20%7C%2010.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
@@ -46,16 +46,6 @@ dotnet add package BlazorEmo
 - **Dark Mode** — automatic `prefers-color-scheme` detection
 - **Responsive** — works on desktop, tablet, and mobile
 - **Touch-Friendly** — 48×48px minimum touch targets
-
-## ♿ Accessibility
-
-- WCAG 2.1 Level AA compliant (text contrast exceeds AAA 7:1+)
-- ARIA 1.2 dialog, tablist, and grid patterns
-- Full keyboard navigation (Arrow keys, Tab, Enter, Escape, Home/End)
-- Focus trap with 3px focus indicators
-- Screen reader announcements
-- Windows High Contrast Mode compatible
-- Section 508 compliant
 
 ## 📖 Parameters
 

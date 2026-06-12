@@ -10,7 +10,7 @@
 
 	  <!-- NuGet Package Metadata -->
 	  <PackageId>BlazorEmo</PackageId>
-	  <Version>1.0.2</Version>
+		  <Version>1.0.3</Version>
 	  <Authors>simscon1</Authors>
 	  <Company>LoneWorx LLC</Company>
 	  <Product>BlazorEmo</Product>
@@ -37,6 +37,9 @@
 
 	  <!-- Release Notes -->
 	  <PackageReleaseNotes>
+		v1.0.3 - Prerendering compatibility
+		- Fixed: EmoPicker now logs a debug warning instead of throwing when OnEmojiSelected is not set, preventing errors during Blazor prerendering
+
 		v1.0.2 - Package cleanup
 		- Fixed: README accuracy — corrected emoji count, model documentation, and repository links
 		- Fixed: SourceLink now points to GitHub for public consumer debugging
